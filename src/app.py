@@ -1196,15 +1196,7 @@ def main():
     except Exception as e:
         st.error(f"An unexpected error occurred: {str(e)}")
         st.info("Please ensure all models are correctly loaded and data fetching is successful.")
-
-    st.markdown("---")
-    st.markdown("""
-    <div style='text-align: center; color: #666;'>
-        <p>📈 MarketSage - AI-Powered Stock Prediction System</p>
-        <p>⚠️ <strong>Disclaimer:</strong> This is for educational purposes only. Not financial advice.</p>
-    </div>
-    """, unsafe_allow_html=True)
-
+    
     st.markdown("""
 ---
 ## 🛠️ Open Source Code
@@ -1215,8 +1207,15 @@ You can view, fork, or contribute to the full MarketSage project on GitHub:
 
 Feel free to star ⭐ the repo, open issues, or submit pull requests!
 
----
 """, unsafe_allow_html=True)
+    st.markdown("---")
+    st.markdown("""
+    <div style='text-align: center; color: #666;'>
+        <p>📈 MarketSage - AI-Powered Stock Prediction System</p>
+        <p>⚠️ <strong>Disclaimer:</strong> This is for educational purposes only. Not financial advice.</p>
+    </div>
+    """, unsafe_allow_html=True)
+
 
 if __name__ == "__main__":
     main()
