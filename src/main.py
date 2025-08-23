@@ -326,8 +326,7 @@ def save_models_and_data(symbol, lstm_model, transformer_model, scaler, features
     """Save all models and associated data"""
     
     # Create models directory
-    models_dir = "saved_models"
-    os.makedirs(models_dir, exist_ok=True)
+    models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../saved_models"))
     
     # Create symbol-specific directory
     symbol_dir = os.path.join(models_dir, symbol.replace(".", "_"))

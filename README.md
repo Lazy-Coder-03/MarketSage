@@ -18,9 +18,13 @@ MarketSage is an AI-driven application that predicts future stock prices using a
 
 ```
 MarketSage/
+├── src/
+│   ├── app.py
+│   └── main.py
 ├── notebooks/
-│   ├── exploratory_data_analysis.ipynb
-│   └── model_testing.ipynb
+│   ├── HYBRID_LSTM+TRANSFORMER.ipynb
+│   ├── HYBRID_LSTM+TRANSFORMER (1).ipynb
+│   └── Marketsage.ipynb
 ├── saved_models/
 │   ├── TCS.NS/
 │   │   ├── metadata.json
@@ -31,15 +35,12 @@ MarketSage/
 │   │   └── ...
 │   └── ...
 ├── .env.example
-├── app.py
-├── main.py
 └── README.md (This file)
 ```
 
+  * `src/`: Contains the main application and training scripts (`app.py` for Streamlit dashboard, `main.py` for model training).
   * `notebooks/`: Contains Jupyter notebooks for exploratory data analysis, model prototyping, and testing.
   * `saved_models/`: The primary directory for storing all trained models and their associated data (scalers, metadata, etc.). Each stock symbol has its own subdirectory.
-  * `app.py`: The Streamlit web application that serves the interactive dashboard.
-  * `main.py`: The script for training the hybrid LSTM and Transformer models, which saves the results to the `saved_models/` directory.
   * `.env.example`: A template for environment variables, specifically for your Gemini API key.
 
 -----
@@ -78,7 +79,7 @@ pip install -r requirements.txt
 Before you can run the web app, you need to train a model for a specific stock. The `main.py` script is set up to train a model for **TCS.NS** by default.
 
 ```bash
-python main.py
+python src/main.py
 ```
 
 This script will:
@@ -110,7 +111,7 @@ GEMINI_API_KEY="YOUR_API_KEY_HERE"
 With the models trained and the API key configured, you can now launch the Streamlit app.
 
 ```bash
-streamlit run app.py
+streamlit run src/app.py
 ```
 
 This will start a local web server and open the MarketSage dashboard in your default web browser. You can then select the stock model you just trained from the sidebar.

@@ -216,7 +216,7 @@ st.markdown("""
     .streamlit-expanderHeader {
         background-color: #ffffff;
         border: none;
-        box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 8px rgba(255, 255, 255, 0.05);
         border-radius: 10px;
         padding: 1rem;
         font-weight: bold;
@@ -358,13 +358,14 @@ class TransformerModel(nn.Module):
 @st.cache_data
 def get_available_models():
     """Get list of available trained models"""
-    models_dir = "saved_models"
+    models_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "../saved_models"))
     if not os.path.exists(models_dir):
         return []
     
     available_models = []
     for symbol_dir in os.listdir(models_dir):
         metadata_path = os.path.join(models_dir, symbol_dir, "metadata.json")
+        print(f"DEBUG: models_dir={models_dir}, symbol_dir={symbol_dir}, metadata_path={metadata_path}")
         if os.path.exists(metadata_path):
             try:
                 with open(metadata_path, 'r') as f:
@@ -378,6 +379,7 @@ def get_available_models():
                     'path': os.path.join(models_dir, symbol_dir)
                 })
             except Exception as e:
+                print(f"DEBUG: Error loading {metadata_path}: {e}")
                 continue
     
     return available_models
@@ -1018,7 +1020,10 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
             - 1 Month: {stock_data['predictions']['1 Month']['gain_pct']:.1f}% gain
             - **Technical Indicators:**
             - RSI: {stock_data['technical_indicators']['RSI']:.1f}
-            - MACD vs Signal: {stock_data['technical_indicators']['MACD']:.4f} vs {stock_data['technical_indicators']['MACD_Signal']:.4f}
+            - MACD: {stock_data['technical_indicators']['MACD']:.4f}
+            - MACD Signal: {stock_data['technical_indicators']['MACD_Signal']:.4f}
+            - EMA20: {stock_data['technical_indicators']['EMA20']:.2f}
+            - EMA50: {stock_data['technical_indicators']['EMA50']:.2f}
             - **Recommendation Score:** {stock_data['recommendation_score']}/5
 
             **Report Structure:**
@@ -1113,7 +1118,7 @@ def main():
 
     if not available_models:
         st.error("❌ No trained models found!")
-        st.info("To get started, please train a model by running `python train_hybrid_model.py` and then refresh this page.")
+        st.info("To get started, please train a model by running `python main.py` and then refresh this page.")
         st.stop()
 
     selected_model, future_days, show_technical_details, show_charts, enable_gemini = render_sidebar(available_models)
@@ -1199,6 +1204,19 @@ def main():
         <p>⚠️ <strong>Disclaimer:</strong> This is for educational purposes only. Not financial advice.</p>
     </div>
     """, unsafe_allow_html=True)
+
+    st.markdown("""
+---
+## 🛠️ Open Source Code
+
+You can view, fork, or contribute to the full MarketSage project on GitHub:
+
+[🔗 GitHub Repository: Lazy-Coder-03/MarketSage](https://github.com/Lazy-Coder-03/MarketSage)
+
+Feel free to star ⭐ the repo, open issues, or submit pull requests!
+
+---
+""", unsafe_allow_html=True)
 
 if __name__ == "__main__":
     main()
