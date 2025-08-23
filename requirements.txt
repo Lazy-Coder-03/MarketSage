@@ -1,0 +1,12 @@
+plotly
+
+numpy
+pandas
+yfinance
+scikit-learn
+tensorflow
+prophet
+matplotlib
+streamlit
+# For GPU support, install CUDA and cuDNN compatible with your TensorFlow version.
+
