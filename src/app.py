@@ -544,7 +544,7 @@ def predict_future(lstm_model, transformer_model, recent_data, scaler, metadata,
         
         lstm_pred_scaled = lstm_model.predict(X_input, verbose=0)[0, 0]
         transformer_pred = get_predictions(transformer_model, X_torch,
-                                         scaler, len(features), device)[0]
+                                          scaler, len(features), device)[0]
         
         dummy = np.zeros((1, len(features)))
         dummy[0, 0] = transformer_pred
@@ -643,6 +643,52 @@ def calculate_gain_loss(predictions, current_price, days):
 # -------------------------
 # UI Rendering Functions
 # -------------------------
+def render_welcome_page(available_models):
+    """Renders the introductory welcome page."""
+    st.markdown("""
+        <div class="main-header" style="text-align: left;">
+            <h1>👋 Welcome to MarketSage!</h1>
+            <h3>Your AI-Powered Stock Prediction Assistant</h3>
+            <p>Made by <a href="https://github.com/lazy-coder-03">Sayantan Ghosh (lazy-Coder)</a></p>
+        </div>
+    """, unsafe_allow_html=True)
+
+    st.markdown("""
+        ### What is MarketSage?
+        MarketSage is a tool that uses **advanced AI models** to analyze historical stock data and predict future price movements. It's designed to help you, even if you have no prior expertise in AI or financial analysis, get a better understanding of potential stock performance.
+
+        ### How It Works
+        1.  **Select a Stock:** Choose from a list of stocks for which a trained AI model is available.
+        2.  **Define Prediction Days:** Pick how many days into the future you want the AI to predict.
+        3.  **Get Your Report:** Click the button to generate a comprehensive report that includes:
+            * **AI Predictions:** A forecast of the stock's price for the coming days.
+            * **Technical Indicators:** Key metrics like RSI and MACD explained in simple terms.
+            * **AI Recommendation:** A clear "Buy," "Hold," or "Sell" recommendation based on the combined analysis.
+            * **AI Insights:** A detailed, easy-to-read summary from a large language model (like Gemini) to provide market context.
+
+        ⚠️ **Disclaimer:** This tool is for **educational and informational purposes only**. The predictions are based on historical data and do not guarantee future performance. Please consult a qualified financial advisor before making any investment decisions.
+    """)
+    st.markdown("---")
+    st.markdown("### 🚀 Get Started")
+
+    # Call the API key check function in the welcome sidebar
+    check_and_configure_gemini()
+
+    model_options = [f"{model['symbol']} - {model['company_name']}" for model in available_models]
+    selected_option = st.selectbox("📊 Choose a stock to analyze", model_options)
+    
+    col1, col2 = st.columns([2, 1])
+    with col1:
+        future_days = st.slider("🔮 Days to Predict", 1, 90, 30, key="future_days_welcome", help="Choose how many days into the future the AI will predict.")
+    with col2:
+        st.markdown("<br>", unsafe_allow_html=True)
+        if st.button("📈 Generate AI Report", use_container_width=True):
+            selected_idx = model_options.index(selected_option)
+            st.session_state.selected_symbol = available_models[selected_idx]['symbol']
+            st.session_state.future_days = future_days
+            st.session_state.page = 'main_app'
+            st.rerun()
+
 
 def render_header(symbol, company_name):
     """Renders the main application header."""
@@ -654,47 +700,110 @@ def render_header(symbol, company_name):
     </div>
     """, unsafe_allow_html=True)
 
+def check_and_configure_gemini():
+    """Handles the Gemini API key input and validation in the sidebar."""
+    if not GEMINI_AVAILABLE:
+        st.sidebar.warning("⚠️ Gemini library not found. AI insights disabled.")
+        return False
+        
+    st.sidebar.markdown("---")
+    st.sidebar.markdown("### 🤖 AI Insights")
+    st.sidebar.info(
+        "To enable AI Market Insights powered by Gemini, you need a valid API key. "
+        "This feature is optional but highly recommended."
+    )
+
+    # Check for a .env file and a key
+    dotenv_exists = os.path.exists(".env")
+    current_api_key = os.getenv('GEMINI_API_KEY', '')
+    
+    is_key_valid = False
+    
+    # Check if a key exists and is valid
+    if current_api_key:
+        try:
+            genai.configure(api_key=current_api_key)
+            genai.get_model('gemini-1.5-flash')
+            is_key_valid = True
+        except Exception as e:
+            is_key_valid = False
+
+    # Display status and instructions based on the key's validity
+    if is_key_valid:
+        st.sidebar.success("✅ Gemini API key loaded and is valid!")
+    else:
+        # Display instructions and input box if key is not valid or missing
+        st.sidebar.warning("⚠️ No valid Gemini API key found.")
+        st.sidebar.markdown(
+            """
+            **To get a key:**
+            1. Go to [Google AI Studio](https://aistudio.google.com/app/apikey).
+            2. Create a new API key.
+            
+            **For this session:** Paste the key below.
+            
+            **For a permanent solution:** Create a `.env` file in the same directory as this app.py with the following line:
+            `GEMINI_API_KEY='your_api_key_here'`
+            """
+        )
+        
+        # Use a text input with an empty value to force re-entry
+        gemini_api_key_input = st.sidebar.text_input(
+            "🔑 Paste your key here:", 
+            type="password", 
+            key="gemini_api_key_input"
+        )
+
+        if gemini_api_key_input:
+            os.environ['GEMINI_API_KEY'] = gemini_api_key_input
+            st.rerun() # Rerun to validate the new key
+
+    return is_key_valid
+
+
 def render_sidebar(available_models):
     """Configures the sidebar with model selection and settings."""
     st.sidebar.markdown("## 🎯 Model & Settings")
     model_options = [f"{model['symbol']} - {model['company_name']} (R²: {model['r2_score']:.3f})"
                      for model in available_models]
 
-    selected_idx = st.sidebar.selectbox("📊 Choose Trained Model",
-                                        range(len(model_options)),
-                                        format_func=lambda x: model_options[x],
-                                        help="Select a model trained on a specific stock.")
+    initial_symbol = st.session_state.selected_symbol
+    initial_idx = next((i for i, model in enumerate(available_models) if model['symbol'] == initial_symbol), 0)
 
+    selected_idx = st.sidebar.selectbox("📊 Choose Trained Model",
+                                         range(len(model_options)),
+                                         index=initial_idx,
+                                         format_func=lambda x: model_options[x],
+                                         help="Select a model trained on a specific stock.")
+    
+    # Update selected symbol in session state to trigger a full reload of data
+    if st.session_state.selected_symbol != available_models[selected_idx]['symbol']:
+        st.session_state.selected_symbol = available_models[selected_idx]['symbol']
+        st.rerun()
+
+    
     selected_model = available_models[selected_idx]
     
     st.sidebar.markdown("---")
     st.sidebar.markdown("### 🔮 Prediction & Display")
-    future_days = st.sidebar.slider("Days to Predict", 1, 90, 30, help="Choose how many days into the future to predict.")
+    # Retrieve the future_days from session state
+    future_days = st.session_state.get("future_days", 30)
+    future_days_new = st.sidebar.slider("Days to Predict", 1, 90, future_days, help="Choose how many days into the future to predict.")
+    
+    if future_days_new != future_days:
+        st.session_state.future_days = future_days_new
+        st.rerun()
+
+
     show_technical_details = st.sidebar.checkbox("Show Technical Details", True, help="Display a detailed table of technical indicators.")
     show_charts = st.sidebar.checkbox("Show Charts", True, help="Display interactive charts for analysis.")
 
+    # Call the API key check function
+    enable_gemini = check_and_configure_gemini()
+    
+    # Checkbox state is now dependent on the validation function
     st.sidebar.markdown("---")
-    st.sidebar.markdown("### 🤖 AI Insights")
-    enable_gemini = False
-    if GEMINI_AVAILABLE:
-        gemini_api_key = os.getenv('GEMINI_API_KEY', '')
-        if not gemini_api_key:
-            gemini_api_key = st.sidebar.text_input("🔑 Gemini API Key", type="password",
-                                                   help="Enter your Google Gemini API key to enable AI insights.")
-            if gemini_api_key:
-                os.environ['GEMINI_API_KEY'] = gemini_api_key
-        
-        if gemini_api_key:
-            st.sidebar.success("✅ Gemini API key loaded")
-            enable_gemini = st.sidebar.checkbox("Enable AI Insights", value=True)
-            if enable_gemini:
-                try:
-                    genai.configure(api_key=gemini_api_key)
-                except Exception as e:
-                    st.sidebar.error(f"❌ API key error: {str(e)}")
-                    enable_gemini = False
-        else:
-            st.sidebar.warning("⚠️ No Gemini API key provided. AI insights are disabled.")
+    enable_gemini = st.sidebar.checkbox("Enable AI Insights", value=enable_gemini, disabled=not enable_gemini, help="Toggle AI insights on or off. Requires a valid API key.")
 
     return selected_model, future_days, show_technical_details, show_charts, enable_gemini
 
@@ -717,7 +826,6 @@ def render_historical_graph(symbol):
         "5Y": "5y"
     }
 
-    # The widget is now OUTSIDE the cached function
     selected_window = st.radio(
         "Select Time Window",
         list(time_windows.keys()),
@@ -726,7 +834,6 @@ def render_historical_graph(symbol):
     )
     
     try:
-        # Pass the selected window to the cached data function
         data = get_historical_data(symbol, time_windows[selected_window])
         if isinstance(data.columns, pd.MultiIndex):
             data.columns = data.columns.get_level_values(0)
@@ -808,7 +915,7 @@ def render_metrics(current_price, recent_data):
         <div class="metric-card {volume_border_class}">
             <p class="metric-title">Volume</p>
             <h2 class="metric-value">{volume_value:,.0f}</h2>
-            <p class="metric-delta {volume_color_class}">{volume_emoji} {volume_change:.1f}%</p>
+            <p class="metric-delta {volume_color_class}">{volume_change:.1f}%</p>
         </div>
         """, unsafe_allow_html=True)
 
@@ -820,8 +927,7 @@ def render_predictions(predictions, current_price, future_days):
         "1 Week": 7, 
         "2 Weeks": 14, 
         "1 Month": 30, 
-        "3 Months": 90, 
-        "6 Months": 180
+        "3 Months": 90
     }
     
     periods_to_display = {
@@ -886,7 +992,7 @@ def render_recommendation(rec_score, rec_factors):
                 score_class = "score-positive" if score > 0 else "score-negative"
             except (IndexError, ValueError):
                 score_class = ""
-                score = ""
+                score_str = ""
             
             factor_description = factor.split('(')[0].strip()
             
@@ -977,6 +1083,12 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
         st.warning("AI Insights are not available. Please install the Google Generative AI library.")
         return
 
+    # Check if insights are already in the cache for the current stock
+    insights_key = f"gemini_insights_{selected_model['symbol']}"
+    if insights_key in st.session_state.insights_cache:
+        st.markdown(st.session_state.insights_cache[insights_key])
+        return
+        
     with st.spinner("🧠 Generating comprehensive AI insights..."):
         try:
             stock_data = {
@@ -1005,7 +1117,6 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
                 'recommendation_score': rec_score
             }
 
-            # Construct the comprehensive prompt for Gemini
             prompt = f"""
             As a senior financial analyst, provide a comprehensive investment analysis for {stock_data['company_name']} ({stock_data['symbol']}).
 
@@ -1039,10 +1150,14 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
             
             model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(prompt)
+            st.session_state.insights_cache[insights_key] = response.text
             st.markdown(response.text)
 
         except genai.types.BlockedPromptException as e:
             st.warning("⚠️ The AI model's response was blocked due to safety concerns. Please try again later.")
+            st.exception(e)
+        except genai.types.APIError as e:
+            st.error("❌ Invalid API Key. Please enter a valid key in the sidebar to enable this feature.")
             st.exception(e)
         except Exception as e:
             if "quota" in str(e).lower():
@@ -1051,12 +1166,12 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
                 st.error(f"An unexpected API error occurred: {e}")
                 st.exception(e)
 
+
 def render_performance_section(info, current_price):
     """Renders the Performance section with 52-week high/low and other key metrics."""
     st.markdown("## 📈 Performance")
     
     try:
-        # Extract data from yfinance info dictionary
         fifty_two_week_low = info.get('fiftyTwoWeekLow', 'N/A')
         fifty_two_week_high = info.get('fiftyTwoWeekHigh', 'N/A')
         day_low = info.get('dayLow', 'N/A')
@@ -1066,10 +1181,6 @@ def render_performance_section(info, current_price):
         volume = info.get('volume', 'N/A')
         market_cap = info.get('marketCap', 'N/A')
 
-        # NOTE: Do NOT pre-format the numbers for the DataFrame.
-        # This is what causes the ArrowInvalid error.
-
-        # Visual representation of today's high/low
         st.markdown("### Today's Range")
         range_col1, range_col2 = st.columns([1, 1])
         with range_col1:
@@ -1079,7 +1190,6 @@ def render_performance_section(info, current_price):
         st.slider("Today's Range", float(day_low) if isinstance(day_low, (int, float)) else 0, float(day_high) if isinstance(day_high, (int, float)) else 1000, float(current_price) if isinstance(current_price, (int, float)) else 0, disabled=True)
         st.write("---")
 
-        # Visual representation of 52W high/low
         st.markdown("### 52-Week Range")
         w_col1, w_col2 = st.columns([1, 1])
         with w_col1:
@@ -1089,7 +1199,6 @@ def render_performance_section(info, current_price):
         st.slider("52W Range", float(fifty_two_week_low) if isinstance(fifty_two_week_low, (int, float)) else 0, float(fifty_two_week_high) if isinstance(fifty_two_week_high, (int, float)) else 1000, float(current_price) if isinstance(current_price, (int, float)) else 0, disabled=True)
         st.write("---")
 
-        # Other metrics
         metrics_data = {
             "Open": open_price,
             "Prev. Close": previous_close,
@@ -1101,10 +1210,8 @@ def render_performance_section(info, current_price):
         st.dataframe(metrics_df, use_container_width=True)
 
     except Exception as e:
-        # User-friendly error message for the frontend
         st.error("⚠️ An error occurred while rendering the performance data.")
         st.info("The data for this stock might be incomplete or malformed. Please try another stock.")
-        # Log the full traceback for debugging purposes
         st.exception(e)
 
 # -------------------------
@@ -1121,6 +1228,31 @@ def main():
         st.info("To get started, please train a model by running `python main.py` and then refresh this page.")
         st.stop()
 
+    # --- Session State Management ---
+    if 'page' not in st.session_state:
+        st.session_state.page = 'welcome'
+        st.session_state.selected_symbol = None
+        st.session_state.future_days = 30
+        st.session_state.insights_cache = {}
+
+    if st.session_state.page == 'welcome' or st.session_state.selected_symbol is None:
+        render_welcome_page(available_models)
+        st.sidebar.markdown("---")
+        st.sidebar.info("Select a stock on the main page to get started.")
+        st.stop()
+    
+    # Check if a different stock was selected in the sidebar
+    # This is handled by the sidebar function's rerun logic now.
+    
+    # --- Main App Content ---
+    
+    selected_model = next((model for model in available_models if model['symbol'] == st.session_state.selected_symbol), None)
+    if not selected_model:
+        st.error("Selected model not found. Please try refreshing.")
+        st.session_state.page = 'welcome'
+        st.rerun()
+
+    
     selected_model, future_days, show_technical_details, show_charts, enable_gemini = render_sidebar(available_models)
     
     render_header(selected_model['symbol'], selected_model['company_name'])
@@ -1157,8 +1289,6 @@ def main():
         if show_charts:
             render_charts(recent_data, predictions, future_days, selected_model['symbol'])
         
-        
-
         if show_technical_details:
             st.write("---")
             render_technical_table(recent_data, current_price)
