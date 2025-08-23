@@ -90,7 +90,7 @@ This script will:
 4.  Find the optimal weight for the hybrid model.
 5.  Save the trained models, scaler, and metadata to the `saved_models/RELIANCE.NS` directory.
 
-You can change the `SYMBOL` variable in `main.py` to train models for other stocks, such as `"RELIANCE.NS"` or `"SBIN.NS"`.
+You can change the `SYMBOL` variable in `main.py` to train models for other stocks, such as `"TCS.NS"` or `"SBIN.NS"`.
 
 ### Step 4: Configure the Gemini API (Optional but Recommended)
 
