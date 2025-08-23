@@ -76,7 +76,7 @@ pip install -r requirements.txt
 
 ### Step 3: Train the Models
 
-Before you can run the web app, you need to train a model for a specific stock. The `main.py` script is set up to train a model for **TCS.NS** by default.
+Before you can run the web app, you need to train a model for a specific stock. The `main.py` script is set up to train a model for **RELIANCE.NS** by default.
 
 ```bash
 python src/main.py
@@ -84,11 +84,11 @@ python src/main.py
 
 This script will:
 
-1.  Download historical data for `TCS.NS`.
+1.  Download historical data for `RELIANCE.NS`.
 2.  Preprocess the data and add technical indicators.
 3.  Train both an LSTM and a Transformer model.
 4.  Find the optimal weight for the hybrid model.
-5.  Save the trained models, scaler, and metadata to the `saved_models/TCS.NS` directory.
+5.  Save the trained models, scaler, and metadata to the `saved_models/RELIANCE.NS` directory.
 
 You can change the `SYMBOL` variable in `main.py` to train models for other stocks, such as `"RELIANCE.NS"` or `"SBIN.NS"`.
 

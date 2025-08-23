@@ -386,7 +386,7 @@ def main():
     print("=" * 50)
     
     # Configuration
-    SYMBOL = "TCS.NS"  # Change this to train different stocks
+    SYMBOL = "RELIANCE.NS"  # Change this to train different stocks
     LOOKBACK_DAYS = 60
     EPOCHS = 50
     
