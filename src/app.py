@@ -14,6 +14,8 @@ import json
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import warnings
+import traceback
+
 warnings.filterwarnings('ignore')
 
 # Optional Gemini AI import
@@ -376,7 +378,8 @@ def get_available_models():
                     'sector': metadata['sector'],
                     'training_date': metadata['training_date'],
                     'r2_score': metadata['model_metrics']['hybrid']['r2'],
-                    'path': os.path.join(models_dir, symbol_dir)
+                    'path': os.path.join(models_dir, symbol_dir),
+                    'model_features': metadata['features']
                 })
             except Exception as e:
                 print(f"DEBUG: Error loading {metadata_path}: {e}")
@@ -439,8 +442,13 @@ def load_models(model_path, metadata):
         return None, None, None
 
 @st.cache_data
-def prepare_recent_data(symbol, lookback_days, features):
-    """Prepare recent data for prediction"""
+def prepare_recent_data(symbol):
+    """
+    Prepare recent data for prediction and display.
+    
+    This function returns the full DataFrame and the yfinance info dictionary.
+    The specific features for the model will be selected later using metadata.
+    """
     try:
         end_date = pd.Timestamp.today()
         start_date = end_date - timedelta(days=365)
@@ -452,7 +460,7 @@ def prepare_recent_data(symbol, lookback_days, features):
         if df.empty:
             return None, None
         
-        df = df[['Open','High','Low','Close','Volume']]
+        df = df[['Open','High','Low','Close','Volume']].copy()
         
         ticker = yf.Ticker(symbol)
         info = ticker.info
@@ -473,6 +481,13 @@ def prepare_recent_data(symbol, lookback_days, features):
         df["Volume"] = df["Volume"].fillna(0)
         df["is_business_day"] = df.index.to_series().map(lambda d: 1 if d.dayofweek < 5 else 0)
         df.index.name = "Date"
+        
+        # Calculate ATR
+        high_low = df['High'] - df['Low']
+        high_close = np.abs(df['High'] - df['Close'].shift())
+        low_close = np.abs(df['Low'] - df['Close'].shift())
+        df['TR'] = pd.concat([high_low, high_close, low_close], axis=1).max(axis=1)
+        df['ATR'] = df['TR'].ewm(span=14, adjust=False).mean()
         
         df['EMA20'] = df['Close'].ewm(span=20, adjust=False).mean()
         df['EMA50'] = df['Close'].ewm(span=50, adjust=False).mean()
@@ -501,10 +516,11 @@ def prepare_recent_data(symbol, lookback_days, features):
         
         df.dropna(inplace=True)
         
-        return df[features], info
+        return df, info
         
     except Exception as e:
         st.error(f"Error preparing data: {str(e)}")
+        st.error(traceback.format_exc())
         return None, None
 
 def inverse_transform(preds, scaler, n_features, target_col=0):
@@ -522,13 +538,13 @@ def get_predictions(model, X_torch, scaler, n_features, device, recalibrate=Fals
     preds_rescaled = inverse_transform(preds, scaler, n_features)
     return preds_rescaled
 
-def predict_future(lstm_model, transformer_model, recent_data, scaler, metadata, device, future_days=30):
+def predict_future(lstm_model, transformer_model, features_for_model, scaler, metadata, device, future_days=30):
     """Predict future prices"""
     lookback_days = metadata['lookback_days']
     features = metadata['features']
     hybrid_weight = metadata['hybrid_weight']
     
-    scaled_data = scaler.transform(recent_data)
+    scaled_data = scaler.transform(features_for_model)
     
     if len(scaled_data) < lookback_days:
         st.error(f"Not enough recent data. Need {lookback_days} days, got {len(scaled_data)}")
@@ -563,24 +579,26 @@ def predict_future(lstm_model, transformer_model, recent_data, scaler, metadata,
     return np.array(predictions)
 
 def calculate_recommendation_score(df, r2_score, future_preds, current_price):
-    """Calculate investment recommendation score"""
+    """Calculate investment recommendation score with new factors"""
     if df is None or future_preds is None:
         return 0, ["Insufficient data for recommendation"]
     
     score = 0
     factors = []
     
+    # 1. RSI Score
     current_rsi = df['RSI'].iloc[-1]
     if current_rsi < 30:
-        score += 2
-        factors.append("📊 RSI indicates oversold - potential buying opportunity (+2)")
+        score += 1.5
+        factors.append("📊 RSI indicates oversold - potential buying opportunity (+1.5)")
     elif current_rsi > 70:
-        score -= 2
-        factors.append("📊 RSI indicates overbought - potential selling pressure (-2)")
+        score -= 1.5
+        factors.append("📊 RSI indicates overbought - potential selling pressure (-1.5)")
     elif 40 <= current_rsi <= 60:
-        score += 1
-        factors.append("📊 RSI in healthy range (+1)")
+        score += 0.5
+        factors.append("📊 RSI in healthy range (+0.5)")
     
+    # 2. MACD Score
     current_macd = df['MACD'].iloc[-1]
     macd_signal = df['MACD_Signal'].iloc[-1]
     if current_macd > macd_signal:
@@ -589,39 +607,60 @@ def calculate_recommendation_score(df, r2_score, future_preds, current_price):
     else:
         score -= 1
         factors.append("📉 MACD bearish signal (-1)")
+
+    # 3. Volume Confirmation
+    recent_volume = df['Volume'].iloc[-1]
+    avg_volume = df['Volume'].rolling(window=30).mean().iloc[-1]
     
-    current_price = df['Close'].iloc[-1]
-    ema20 = df['EMA20'].iloc[-1]
+    recent_price_change = df['Close'].iloc[-1] - df['Close'].iloc[-2]
+    
+    if recent_price_change > 0 and recent_volume > avg_volume * 1.5:
+        score += 1.5
+        factors.append("💪 Strong volume confirms recent price increase (+1.5)")
+    elif recent_price_change < 0 and recent_volume > avg_volume * 1.5:
+        score -= 1.5
+        factors.append("⚠️ High volume confirms recent price decrease (-1.5)")
+    elif recent_price_change > 0 and recent_volume < avg_volume * 0.8:
+        score -= 0.5
+        factors.append("📉 Weak volume suggests recent price increase is fragile (-0.5)")
+    
+    # 4. Volatility (ATR) - Risk Factor
+    current_atr = df['ATR'].iloc[-1]
+    avg_atr = df['ATR'].mean()
+    
+    if current_atr < avg_atr * 0.8:
+        score += 0.5
+        factors.append("⚖️ Lower than average volatility (lower risk) (+0.5)")
+    elif current_atr > avg_atr * 1.2:
+        score -= 0.5
+        factors.append("⚡ Higher than average volatility (higher risk) (-0.5)")
+
+    # 5. Trend Strength (EMA)
     ema50 = df['EMA50'].iloc[-1]
-    
-    if current_price > ema20 > ema50:
-        score += 2
-        factors.append("📈 Strong uptrend - price above both EMAs (+2)")
-    elif current_price > ema20:
+    if current_price > ema50:
         score += 1
-        factors.append("📈 Mild uptrend - price above EMA20 (+1)")
-    elif current_price < ema20 < ema50:
-        score -= 2
-        factors.append("📉 Strong downtrend - price below both EMAs (-2)")
-    else:
+        factors.append("🚀 Price is above EMA50, indicating a clear long-term uptrend (+1)")
+    elif current_price < ema50:
         score -= 1
-        factors.append("📉 Mild downtrend - price below EMA20 (-1)")
+        factors.append("🔻 Price is below EMA50, indicating a long-term downtrend (-1)")
     
+    # 6. Model Confidence
     if r2_score > 0.8:
-        score += 1
-        factors.append(f"🎯 High model confidence (R²={r2_score:.3f}) (+1)")
+        score += 0.5
+        factors.append(f"🎯 High model confidence (R²={r2_score:.3f}) (+0.5)")
     elif r2_score < 0.5:
-        score -= 1
-        factors.append(f"⚠️ Low model confidence (R²={r2_score:.3f}) (-1)")
+        score -= 0.5
+        factors.append(f"⚠️ Low model confidence (R²={r2_score:.3f}) (-0.5)")
     
+    # 7. Short-term Prediction Outlook
     if len(future_preds) >= 7:
         week_gain = (future_preds[6] - current_price) / current_price * 100
         if week_gain > 5:
             score += 1
-            factors.append(f"🚀 Strong positive outlook (+1)")
+            factors.append(f"🚀 Strong positive short-term outlook from AI (+1)")
         elif week_gain < -5:
             score -= 1
-            factors.append(f"⚠️ Negative outlook (-1)")
+            factors.append(f"⚠️ Negative short-term outlook from AI (-1)")
     
     return score, factors
 
@@ -713,8 +752,7 @@ def check_and_configure_gemini():
         "This feature is optional but highly recommended."
     )
 
-    # Check for a .env file and a key
-    dotenv_exists = os.path.exists(".env")
+    # Get the current key from the environment (may be from a .env file or a previous session input)
     current_api_key = os.getenv('GEMINI_API_KEY', '')
     
     is_key_valid = False
@@ -733,7 +771,7 @@ def check_and_configure_gemini():
         st.sidebar.success("✅ Gemini API key loaded and is valid!")
     else:
         # Display instructions and input box if key is not valid or missing
-        st.sidebar.warning("⚠️ No valid Gemini API key found.")
+        st.sidebar.warning("⚠️ No valid Gemini API key found. Enter a key below.")
         st.sidebar.markdown(
             """
             **To get a key:**
@@ -747,7 +785,6 @@ def check_and_configure_gemini():
             """
         )
         
-        # Use a text input with an empty value to force re-entry
         gemini_api_key_input = st.sidebar.text_input(
             "🔑 Paste your key here:", 
             type="password", 
@@ -868,6 +905,7 @@ def render_historical_graph(symbol):
             st.warning("No historical data found for the selected time window.")
     except Exception as e:
         st.error(f"Error fetching or plotting historical data: {str(e)}")
+        st.error(traceback.format_exc())
 
 
 def render_metrics(current_price, recent_data):
@@ -953,34 +991,66 @@ def render_predictions(predictions, current_price, future_days):
             </div>
             """, unsafe_allow_html=True)
 
-def render_recommendation(rec_score, rec_factors):
-    """Renders the AI recommendation and analysis factors."""
+def render_recommendation_gauge(rec_score):
+    """Renders a speedometer-style gauge for the recommendation score."""
     st.markdown("## 🎯 AI Recommendation")
-    rec_col1, rec_col2 = st.columns([1, 2])
     
+    # Map score to a category
     if rec_score >= 3:
         recommendation = "STRONG BUY"
         rec_class = "strong-buy-color"
+        needle_color = "#11783f"
     elif rec_score >= 1:
         recommendation = "BUY"
         rec_class = "buy-color"
+        needle_color = "#28a745"
     elif rec_score >= -1:
         recommendation = "HOLD"
         rec_class = "hold-color"
+        needle_color = "#ffc107"
     elif rec_score >= -3:
         recommendation = "SELL"
         rec_class = "sell-color"
+        needle_color = "#fd7e14"
     else:
         recommendation = "STRONG SELL"
         rec_class = "strong-sell-color"
+        needle_color = "#dc3545"
+
+    fig = go.Figure(go.Indicator(
+        mode = "gauge+number",
+        value = rec_score,
+        domain = {'x': [0, 1], 'y': [0, 1]},
+        title = {'text': f"<span style='font-size:1.5em; font-weight:bold;' class='{rec_class}'>{recommendation}</span><br><span style='font-size:0.9em;'>Score: {rec_score:.1f}/5</span>", 'font': {'size': 20}},
+        gauge = {
+            'shape': "angular",
+            'axis': {'range': [-5, 5], 'tickvals': [-5,-3,-1,1,3,5], 'ticktext': ['-5','-3','-1','1','3','5']},
+            'bar': {'color': needle_color, 'thickness': 0.3},
+            'bgcolor': "white",
+            'bordercolor': "gray",
+            'steps': [
+                {'range': [-5, -3], 'color': '#dc3545'},
+                {'range': [-3, -1], 'color': '#fd7e14'},
+                {'range': [-1, 1], 'color': '#ffc107'},
+                {'range': [1, 3], 'color': '#28a745'},
+                {'range': [3, 5], 'color': '#11783f'}
+            ],
+            'threshold': {
+                'line': {'color': "black", 'width': 4},
+                'thickness': 0.75,
+                'value': rec_score}
+        }
+    ))
+    fig.update_layout(height=400, margin=dict(t=50, b=0, l=0, r=0))
+    st.plotly_chart(fig, use_container_width=True)
+
+
+def render_recommendation(rec_score, rec_factors):
+    """Renders the AI recommendation and analysis factors."""
+    rec_col1, rec_col2 = st.columns([1, 2])
 
     with rec_col1:
-        st.markdown(f"""
-        <div class="recommendation-card">
-            <h1 class="{rec_class}">{recommendation}</h1>
-            <p class="recommendation-score">Score: {rec_score}/5</p>
-        </div>
-        """, unsafe_allow_html=True)
+        render_recommendation_gauge(rec_score)
     
     with rec_col2:
         st.markdown("### Analysis Factors:")
@@ -988,7 +1058,7 @@ def render_recommendation(rec_score, rec_factors):
         for factor in rec_factors:
             try:
                 score_str = factor.split('(')[-1].replace(')', '')
-                score = int(score_str)
+                score = float(score_str.replace('+', ''))
                 score_class = "score-positive" if score > 0 else "score-negative"
             except (IndexError, ValueError):
                 score_class = ""
@@ -1010,14 +1080,16 @@ def render_charts(recent_data, predictions, future_days, symbol):
     
     fig = make_subplots(
         rows=3, cols=1,
-        subplot_titles=("Price & Moving Averages", "RSI", "MACD"),
-        vertical_spacing=0.05,
-        row_heights=[0.6, 0.2, 0.2]
+        row_heights=[0.6, 0.2, 0.2],
+        shared_xaxes=True,
+        vertical_spacing=0.05
     )
     
-    # Historical prices
+    # Historical prices and moving averages
     fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['Close'], name="Historical Price", line=dict(color="#2a5298")), row=1, col=1)
-    
+    fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['EMA20'], name="EMA20", line=dict(color="#ffc107", dash="dash")), row=1, col=1)
+    fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['EMA50'], name="EMA50", line=dict(color="#dc3545", dash="dash")), row=1, col=1)
+
     # Add a dotted line connecting historical and predicted data
     connector_dates = [recent_data.index[-1], pd.date_range(start=recent_data.index[-1] + timedelta(days=1), periods=1)[0]]
     connector_prices = [recent_data['Close'].iloc[-1], predictions[0]]
@@ -1029,51 +1101,76 @@ def render_charts(recent_data, predictions, future_days, symbol):
     future_dates = pd.date_range(start=recent_data.index[-1] + timedelta(days=1), periods=future_days, freq='D')
     fig.add_trace(go.Scatter(x=future_dates, y=predictions, name="AI Prediction", line=dict(color="#28a745", width=3)), row=1, col=1)
 
-    # Moving averages, RSI, and MACD traces remain the same
-    fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['EMA20'], name="EMA20", line=dict(color="#ffc107", dash="dash")), row=1, col=1)
-    fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['EMA50'], name="EMA50", line=dict(color="#dc3545", dash="dash")), row=1, col=1)
-    
+    # RSI
     fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['RSI'], name="RSI", line=dict(color="#667eea")), row=2, col=1)
-    fig.add_hline(y=70, line_dash="dash", line_color="#dc3545", row=2, col=1, annotation_text="Overbought")
-    fig.add_hline(y=30, line_dash="dash", line_color="#28a745", row=2, col=1, annotation_text="Oversold")
+    fig.add_hline(y=70, line_dash="dash", line_color="#dc3545", row=2, col=1, annotation_text="Overbought", annotation_position="top left")
+    fig.add_hline(y=30, line_dash="dash", line_color="#28a745", row=2, col=1, annotation_text="Oversold", annotation_position="bottom left")
     
+    # MACD
     fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['MACD'], name="MACD", line=dict(color="#17a2b8")), row=3, col=1)
     fig.add_trace(go.Scatter(x=recent_data.index, y=recent_data['MACD_Signal'], name="MACD Signal", line=dict(color="#ffc107")), row=3, col=1)
     
     fig.update_layout(height=800, showlegend=True,
                       title_text=f"<b>{symbol} Technical Analysis & AI Predictions</b>")
-    fig.update_xaxes(title_text="Date", row=3, col=1)
+    
+    # Update y-axis titles
     fig.update_yaxes(title_text="Price (₹)", row=1, col=1)
     fig.update_yaxes(title_text="RSI", row=2, col=1)
     fig.update_yaxes(title_text="MACD", row=3, col=1)
+    
     fig.update_layout(template="plotly_white")
     
     st.plotly_chart(fig, use_container_width=True)
 
 def render_technical_table(recent_data, current_price):
-    """Renders a detailed table of technical indicators."""
+    """Renders a detailed table of technical indicators with hover help text."""
     st.markdown("## 📊 Current Technical Indicators")
+    features = ["RSI", "MACD", "MACD_Signal", "EMA20", "EMA50", "ATR", "Current Price"]
+    # Define the help text in a dictionary for easy mapping
+    # help_dict = {
+    #     "RSI": "The Relative Strength Index measures momentum. A value above 70 suggests the stock is overbought, while a value below 30 suggests it is oversold.",
+    #     "MACD": "The Moving Average Convergence Divergence identifies changes in a stock's trend by comparing two moving averages.",
+    #     "MACD Signal": "The MACD signal line is a moving average of the MACD itself, used to generate buy/sell signals.",
+    #     "EMA20": "The 20-day Exponential Moving Average smooths price data to identify a short-term trend.",
+    #     "EMA50": "The 50-day Exponential Moving Average smooths price data to identify a long-term trend.",
+    #     "ATR": "The Average True Range measures a stock's volatility. A higher value indicates larger price swings.",
+    #     "Current Price": "The last traded price of the stock."
+    # }
+
     tech_data = {
-        "Indicator": ["RSI", "MACD", "MACD Signal", "EMA20", "EMA50", "Current Price"],
+        "Indicator": features,
         "Value": [
             f"{recent_data['RSI'].iloc[-1]:.2f}",
             f"{recent_data['MACD'].iloc[-1]:.4f}",
             f"{recent_data['MACD_Signal'].iloc[-1]:.4f}",
             f"₹{recent_data['EMA20'].iloc[-1]:.2f}",
             f"₹{recent_data['EMA50'].iloc[-1]:.2f}",
+            f"₹{recent_data['ATR'].iloc[-1]:.2f}",
             f"₹{current_price:.2f}"
         ],
         "Signal": [
-            "Oversold" if recent_data['RSI'].iloc[-1] < 30 else "Overbought" if recent_data['RSI'].iloc[-1] > 70 else "Neutral",
+            "Overbought" if recent_data['RSI'].iloc[-1] > 70 else "Oversold" if recent_data['RSI'].iloc[-1] < 30 else "Neutral",
             "Bullish" if recent_data['MACD'].iloc[-1] > recent_data['MACD_Signal'].iloc[-1] else "Bearish",
             "-",
             "Support" if current_price > recent_data['EMA20'].iloc[-1] else "Resistance",
             "Support" if current_price > recent_data['EMA50'].iloc[-1] else "Resistance",
+            "-",
             "-"
         ]
     }
     tech_df = pd.DataFrame(tech_data)
-    st.dataframe(tech_df, use_container_width=True)
+    
+    st.dataframe(
+        tech_df,
+        use_container_width=True,
+        hide_index=True,
+        column_config={
+            "Indicator": st.column_config.TextColumn(
+                "Indicator"
+                # help=help_dict
+            )
+        }
+    )
 
 def render_gemini_insights(selected_model, current_price, predictions, recent_data, metadata, rec_score, future_days):
     """Generates and renders insights using the Gemini API with a more detailed prompt."""
@@ -1135,15 +1232,16 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
             - MACD Signal: {stock_data['technical_indicators']['MACD_Signal']:.4f}
             - EMA20: {stock_data['technical_indicators']['EMA20']:.2f}
             - EMA50: {stock_data['technical_indicators']['EMA50']:.2f}
+            - ATR: {recent_data['ATR'].iloc[-1]:.2f}
             - **Recommendation Score:** {stock_data['recommendation_score']}/5
 
             **Report Structure:**
-
-            1.  **Key Insights:** Summarize the main takeaways from the AI analysis and technical data.
-            2.  **Risk Factors:** Identify and explain the primary risks, including those not mentioned in the provided data, such as market risk or company-specific news.
-            3.  **Investment Outlook:** Based on the data, provide a clear short- to medium-term outlook.
-            4.  **Strategic Recommendations:** Offer actionable, strategic advice for a retail investor (e.g., "Buy on Dips," "Hold," "Book Partial Profits").
-            5.  **Conclusion:** Deliver a final, concise summary of the overall investment thesis.
+            1.  **Features meaning:** Explain the significance of the features RSI, MACD, MACD Signal, EMA20, EMA50, ATR, and Current Price.
+            2.  **Key Insights:** Summarize the main takeaways from the AI analysis and technical data.
+            3.  **Risk Factors:** Identify and explain the primary risks, including those not mentioned in the provided data, such as market risk or company-specific news.
+            4.  **Investment Outlook:** Based on the data, provide a clear short- to medium-term outlook.
+            5.  **Strategic Recommendations:** Offer actionable, strategic advice for a retail investor (e.g., "Buy on Dips," "Hold," "Book Partial Profits").
+            6.  **Conclusion:** Deliver a final, concise summary of the overall investment thesis.
 
             Ensure the entire output is formatted using Markdown with appropriate headings and bolding for clarity. Do not include any introductory or concluding remarks outside of the requested report structure.
             """
@@ -1213,6 +1311,7 @@ def render_performance_section(info, current_price):
         st.error("⚠️ An error occurred while rendering the performance data.")
         st.info("The data for this stock might be incomplete or malformed. Please try another stock.")
         st.exception(e)
+        st.error(traceback.format_exc())
 
 # -------------------------
 # Main Application Flow
@@ -1253,8 +1352,13 @@ def main():
         st.rerun()
 
     
-    selected_model, future_days, show_technical_details, show_charts, enable_gemini = render_sidebar(available_models)
-    
+    try:
+        selected_model, future_days, show_technical_details, show_charts, enable_gemini = render_sidebar(available_models)
+    except Exception as e:
+        st.error(f"Error in sidebar rendering: {e}")
+        st.error(traceback.format_exc())
+        st.stop()
+        
     render_header(selected_model['symbol'], selected_model['company_name'])
     
     try:
@@ -1265,21 +1369,26 @@ def main():
             lstm_model, transformer_model, device = load_models(selected_model['path'], metadata)
             if lstm_model is None: st.stop()
 
-            recent_data, info = prepare_recent_data(selected_model['symbol'], metadata['lookback_days'], metadata['features'])
-            if recent_data is None: st.stop()
+            full_data, info = prepare_recent_data(selected_model['symbol'])
+            if full_data is None: st.stop()
+            
+            # The fix is here: create features_for_model using metadata
+            # Get the list of features from the metadata
+            model_features_list = metadata['features']
+            features_for_model = full_data[model_features_list].copy()
 
-            predictions = predict_future(lstm_model, transformer_model, recent_data, scaler, metadata, device, future_days)
+            predictions = predict_future(lstm_model, transformer_model, features_for_model, scaler, metadata, device, future_days)
             if predictions is None: st.stop()
 
-        current_price = recent_data['Close'].iloc[-1]
-        rec_score, rec_factors = calculate_recommendation_score(recent_data, metadata['model_metrics']['hybrid']['r2'], predictions, current_price)
+        current_price = full_data['Close'].iloc[-1]
+        rec_score, rec_factors = calculate_recommendation_score(full_data, metadata['model_metrics']['hybrid']['r2'], predictions, current_price)
 
         render_historical_graph(selected_model['symbol'])
         st.write("---")
         st.write("---")
         if info:
             render_performance_section(info, current_price)
-        render_metrics(current_price, recent_data)
+        render_metrics(current_price, full_data)
         st.write("---")
         render_predictions(predictions, current_price, future_days)
         st.write("---")
@@ -1287,15 +1396,15 @@ def main():
         
         st.write("---")
         if show_charts:
-            render_charts(recent_data, predictions, future_days, selected_model['symbol'])
+            render_charts(full_data, predictions, future_days, selected_model['symbol'])
         
         if show_technical_details:
             st.write("---")
-            render_technical_table(recent_data, current_price)
+            render_technical_table(full_data, current_price)
 
         if enable_gemini and GEMINI_AVAILABLE:
             st.write("---")
-            render_gemini_insights(selected_model, current_price, predictions, recent_data, metadata, rec_score, future_days)
+            render_gemini_insights(selected_model, current_price, predictions, full_data, metadata, rec_score, future_days)
 
         with st.expander("🎯 View Model Performance Details"):
             st.markdown("### Hybrid Model Metrics")
@@ -1326,6 +1435,7 @@ def main():
     except Exception as e:
         st.error(f"An unexpected error occurred: {str(e)}")
         st.info("Please ensure all models are correctly loaded and data fetching is successful.")
+        st.error(traceback.format_exc())
     
     st.markdown("""
 ---
@@ -1333,7 +1443,7 @@ def main():
 
 You can view, fork, or contribute to the full MarketSage project on GitHub:
 
-[🔗 GitHub Repository: Lazy-Coder-03/MarketSage](https://github.com/Lazy-Coder-03/MarketSage)
+[🔗 GitHub Repository: Lazy-Coder-03/MarketSage](https://github.com/lazy-coder-03/MarketSage)
 
 Feel free to star ⭐ the repo, open issues, or submit pull requests!
 
