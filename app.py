@@ -1,6 +1,3 @@
-# MarketSage - AI Stock Prediction Streamlit App
-# Loads pre-trained hybrid models for stock prediction and analysis
-
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -31,13 +28,17 @@ except ImportError:
 # -------------------------
 st.markdown("""
 <style>
-    /* Main container and text styling */
+    /* ------------------------- */
+    /* Global & Main Component Styles */
+    /* ------------------------- */
+
+    /* General App Container Styling (Light Mode) */
     .stApp {
-        background-color: #f0f2f6; /* A soft, professional gray background */
+        background-color: #f0f2f6;
         color: #333;
     }
-
-    /* Professional header with subtle gradients and shadow */
+    
+    /* Professional Header with subtle gradients and shadow (consistent in both modes) */
     .main-header {
         background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
         padding: 2.5rem 2rem;
@@ -64,27 +65,51 @@ st.markdown("""
         opacity: 0.8;
     }
     
-    /* Metric cards styling */
-    .stMetric > div:nth-child(1) {
-        border-radius: 10px;
+    /* Current Market Status - Polished Metric Card Styling (Light Mode) */
+    .metric-card {
         background-color: #ffffff;
         padding: 1rem;
+        border-radius: 10px;
         box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        border-left: 5px solid #2a5298;
+        text-align: center;
+        border-left: 5px solid;
+        transition: transform 0.2s ease-in-out;
     }
-    .stMetric label {
-        color: #667eea;
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+    .metric-title {
+        font-size: 1rem;
         font-weight: bold;
+        color: #667eea;
     }
-    .stMetric > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) {
-        font-size: 1.5rem;
+    .metric-value {
+        font-size: 2rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
         color: #1e3c72;
     }
-    .stMetric > div:nth-child(1) > div:nth-child(2) > div:nth-child(2) {
+    .metric-delta {
         font-size: 1rem;
+        font-weight: bold;
+    }
+    .positive {
+        color: #28a745;
+    }
+    .negative {
+        color: #dc3545;
+    }
+    .positive-border {
+        border-color: #28a745;
+    }
+    .negative-border {
+        border-color: #dc3545;
+    }
+    .neutral-border {
+        border-color: #ffc107;
     }
 
-    /* Prediction card styling with clear color coding */
+    /* Prediction Card Styling with clear color coding (Light Mode) */
     .prediction-card {
         background-color: #ffffff;
         padding: 1.5rem;
@@ -106,22 +131,30 @@ st.markdown("""
     .prediction-card h2 {
         font-size: 2rem;
         margin: 0.25rem 0;
-        color: #1e3c72;
     }
     .prediction-card h3 {
         font-size: 1.25rem;
         margin: 0.25rem 0;
     }
+    .prediction-card p {
+        font-weight: bold;
+    }
 
-    /* Color-coded status for predictions */
+    /* Color-coded borders and text for predictions */
     .gain-positive {
-        border-left: 5px solid #28a745; /* Green border for gains */
+        border-left: 5px solid #28a745;
     }
     .gain-negative {
-        border-left: 5px solid #dc3545; /* Red border for losses */
+        border-left: 5px solid #dc3545;
     }
-
-    /* Recommendation card styling */
+    .gain-text {
+        color: #28a745;
+    }
+    .loss-text {
+        color: #dc3545;
+    }
+    
+    /* New Recommendation Card Styling (Light Mode) */
     .recommendation-card {
         background-color: #ffffff;
         padding: 2rem;
@@ -130,24 +163,56 @@ st.markdown("""
         text-align: center;
     }
 
-    .recommendation-card h2 {
+    .recommendation-title h1 {
+        font-size: 3rem;
+        font-weight: bold;
+        margin: 0.5rem 0;
+    }
+    .recommendation-score {
         font-size: 2.5rem;
         font-weight: bold;
         margin-bottom: 0.5rem;
     }
-    .recommendation-card h1 {
-        font-size: 3.5rem;
-        font-weight: bold;
-        margin-top: 0;
-    }
-    
-    .score-strong-buy { color: #28a745; }
-    .score-buy { color: #17a2b8; }
-    .score-hold { color: #ffc107; }
-    .score-sell { color: #fd7e14; }
-    .score-strong-sell { color: #dc3545; }
 
-    /* Expander styling */
+    /* Recommendation Colors */
+    .buy-color { color: #28a745; }
+    .strong-buy-color { color: #11783f; }
+    .hold-color { color: #ffc107; }
+    .sell-color { color: #fd7e14; }
+    .strong-sell-color { color: #dc3545; }
+
+    /* Analysis Factors Styling (Light Mode) */
+    .analysis-factors {
+        list-style-type: none;
+        padding: 0;
+    }
+    .analysis-factors li {
+        background-color: #f8f9fa;
+        margin-bottom: 10px;
+        padding: 10px 15px;
+        border-radius: 8px;
+        border-left: 4px solid;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    .analysis-factors li span {
+        font-size: 0.9rem;
+        font-weight: 500;
+    }
+    .score-pill {
+        padding: 2px 8px;
+        border-radius: 50px;
+        font-weight: bold;
+        color: white;
+        font-size: 0.8rem;
+        min-width: 40px;
+        text-align: center;
+    }
+    .score-positive { background-color: #28a745; }
+    .score-negative { background-color: #dc3545; }
+
+    /* Expander Styling */
     .streamlit-expanderHeader {
         background-color: #ffffff;
         border: none;
@@ -156,9 +221,101 @@ st.markdown("""
         padding: 1rem;
         font-weight: bold;
     }
+
+    /* New styles for the 52-Week High/Low section */
+    .slider-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+        margin-bottom: 1rem;
+    }
+    .slider-label {
+        font-size: 0.875rem;
+        color: #6c757d;
+    }
+    .slider-value {
+        font-size: 1.125rem;
+        font-weight: bold;
+        color: #333;
+    }
+
+    /* Custom horizontal divider */
+    .st-emotion-cache-1px2j72 hr {
+        border-top: 1px solid #e0e0e0;
+    }
+
+    /* ------------------------- */
+    /* Dark Mode Overrides */
+    /* ------------------------- */
+    @media (prefers-color-scheme: dark) {
+        .stApp {
+            background-color: #121212;
+            color: #f0f2f6;
+        }
+
+        .metric-card {
+            background-color: #1e1e1e;
+            box-shadow: 0 4px 12px rgba(255, 255, 255, 0.05);
+        }
+        .metric-value {
+            color: #f0f2f6;
+        }
+        .metric-title {
+            color: #ccc;
+        }
+
+        .stMetric > div:nth-child(1) {
+            background-color: #1e1e1e;
+            border-left: 5px solid #667eea;
+        }
+        .stMetric label {
+            color: #ccc;
+        }
+        .stMetric > div:nth-child(1) > div:nth-child(2) > div:nth-child(1) {
+            color: #fff;
+        }
+        
+        .prediction-card {
+            background-color: #1e1e1e;
+            color: #f0f2f6;
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.05);
+        }
+        .prediction-card h4 {
+            color: #667eea;
+        }
+        .prediction-card h2 {
+            color: #f0f2f6;
+        }
+
+        .recommendation-card {
+            background-color: #1e1e1e;
+            box-shadow: 0 8px 25px rgba(255, 255, 255, 0.05);
+        }
+
+        .analysis-factors li {
+            background-color: #1e1e1e;
+            border: 1px solid #333;
+        }
+        
+        .streamlit-expanderHeader {
+            background-color: #1e1e1e;
+            box-shadow: 0 4px 8px rgba(255, 255, 255, 0.03);
+            color: #f0f2f6;
+        }
+        
+        .slider-value {
+            color: #f0f2f6;
+        }
+        .slider-label {
+            color: #ccc;
+        }
+        .st-emotion-cache-1px2j72 hr {
+            border-top: 1px solid #444;
+        }
+    }
 </style>
 """, unsafe_allow_html=True)
-
 
 # -------------------------
 # Model Definitions (same as training script)
@@ -407,7 +564,7 @@ def calculate_recommendation_score(df, r2_score, future_preds, current_price):
     """Calculate investment recommendation score"""
     if df is None or future_preds is None:
         return 0, ["Insufficient data for recommendation"]
-        
+    
     score = 0
     factors = []
     
@@ -470,7 +627,7 @@ def calculate_gain_loss(predictions, current_price, days):
     """Calculate gain/loss percentage for given days"""
     if days > len(predictions):
         return 0, "Insufficient predictions", current_price
-        
+    
     future_price = predictions[days-1]
     gain_pct = ((future_price - current_price) / current_price) * 100
     
@@ -491,7 +648,7 @@ def render_header(symbol, company_name):
     <div class="main-header">
         <h1>📈 MarketSage</h1>
         <h3>AI-Powered Stock Predictor for {company_name} ({symbol})</h3>
-        <p>Built with Pre-trained LSTM & Transformer Models</p>
+        <p>Built with Pre-trained LSTM & Transformer Models Made by <a href="https://github.com/lazy-coder-03">Sayantan Ghosh (lazy-Coder)</a></p>
     </div>
     """, unsafe_allow_html=True)
 
@@ -539,42 +696,132 @@ def render_sidebar(available_models):
 
     return selected_model, future_days, show_technical_details, show_charts, enable_gemini
 
-def render_metrics(current_price, recent_data, metadata):
-    """Renders the top-level metric cards."""
+@st.cache_data
+def get_historical_data(symbol, period):
+    """Cached function to fetch historical data from yfinance."""
+    data = yf.download(symbol, period=period, interval="1d")
+    return data
+
+def render_historical_graph(symbol):
+    """Renders a graph of historical stock prices with a selectable time window."""
+    st.markdown("## 📈 Historical Price Chart")
+    
+    time_windows = {
+        "7D": "7d",
+        "1M": "1mo",
+        "3M": "3mo",
+        "6M": "6mo",
+        "1Y": "1y",
+        "5Y": "5y"
+    }
+
+    # The widget is now OUTSIDE the cached function
+    selected_window = st.radio(
+        "Select Time Window",
+        list(time_windows.keys()),
+        horizontal=True,
+        index=0
+    )
+    
+    try:
+        # Pass the selected window to the cached data function
+        data = get_historical_data(symbol, time_windows[selected_window])
+        if isinstance(data.columns, pd.MultiIndex):
+            data.columns = data.columns.get_level_values(0)
+        if not data.empty and 'Close' in data.columns:
+            data.dropna(subset=['Close'], inplace=True)
+            data['Close'] = pd.to_numeric(data['Close'], errors='coerce')
+            data.dropna(subset=['Close'], inplace=True)
+
+            if not data.empty:
+                fig = go.Figure()
+                fig.add_trace(go.Scatter(
+                    x=data.index,
+                    y=data['Close'],
+                    mode='lines',
+                    name='Close Price',
+                    line=dict(color='#2a5298', width=2)
+                ))
+                fig.update_layout(
+                    title=f"Historical Price for {symbol} ({selected_window})",
+                    yaxis_title="Price (₹)",
+                    xaxis_title="Date",
+                    template="plotly_dark" if st.get_option("theme.base") == "dark" else "plotly_white",
+                    yaxis=dict(
+                        title="Price (₹)",
+                        tickformat=".2f"
+                    )
+                )
+                st.plotly_chart(fig, use_container_width=True)
+            else:
+                st.warning("No valid historical data found for the selected time window after cleaning.")
+        else:
+            st.warning("No historical data found for the selected time window.")
+    except Exception as e:
+        st.error(f"Error fetching or plotting historical data: {str(e)}")
+
+
+def render_metrics(current_price, recent_data):
+    """Renders polished and relevant top-level market metrics."""
     st.markdown("## 📊 Current Market Status")
-    col1, col2, col3, col4 = st.columns(4)
+    
+    col1, col2, col3 = st.columns(3)
+    
+    price_delta = ((current_price - recent_data['Close'].iloc[-2]) / recent_data['Close'].iloc[-2] * 100)
+    price_color_class = "positive" if price_delta > 0 else "negative"
+    price_border_class = "positive-border" if price_delta > 0 else "negative-border"
+    price_emoji = "▲" if price_delta > 0 else "▼"
     
     with col1:
-        st.metric(label="Current Price", value=f"₹{current_price:.2f}",
-                  delta=f"{((current_price - recent_data['Close'].iloc[-2]) / recent_data['Close'].iloc[-2] * 100):.2f}%")
+        st.markdown(f"""
+        <div class="metric-card {price_border_class}">
+            <p class="metric-title">Current Price</p>
+            <h2 class="metric-value">₹{current_price:.2f}</h2>
+            <p class="metric-delta {price_color_class}">{price_emoji} {price_delta:.2f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
     
+    rsi_value = recent_data['RSI'].iloc[-1]
+    rsi_status = "Overbought" if rsi_value > 70 else "Oversold" if rsi_value < 30 else "Neutral"
+    rsi_color_class = "negative" if rsi_value > 70 else "positive" if rsi_value < 30 else ""
+    rsi_border_class = "negative-border" if rsi_value > 70 else "positive-border" if rsi_value < 30 else "neutral-border"
+
     with col2:
-        st.metric(label="RSI", value=f"{recent_data['RSI'].iloc[-1]:.1f}",
-                  delta="Oversold" if recent_data['RSI'].iloc[-1] < 30 else "Overbought" if recent_data['RSI'].iloc[-1] > 70 else "Normal")
+        st.markdown(f"""
+        <div class="metric-card {rsi_border_class}">
+            <p class="metric-title">RSI</p>
+            <h2 class="metric-value">{rsi_value:.1f}</h2>
+            <p class="metric-delta {rsi_color_class}">{rsi_status}</p>
+        </div>
+        """, unsafe_allow_html=True)
     
+    volume_value = recent_data['Volume'].iloc[-1]
+    volume_change = (volume_value - recent_data['Volume'].iloc[-2]) / recent_data['Volume'].iloc[-2] * 100 if recent_data['Volume'].iloc[-2] != 0 else 0
+    volume_color_class = "positive" if volume_change > 0 else "negative"
+    volume_border_class = "positive-border" if volume_change > 0 else "negative-border"
+    volume_emoji = "▲" if volume_change > 0 else "▼"
+
     with col3:
-        st.metric(label="Model R² Score", value=f"{metadata['model_metrics']['hybrid']['r2']:.4f}",
-                  delta=f"RMSE: {metadata['model_metrics']['hybrid']['rmse']:.2f}")
-    
-    with col4:
-        volume_change = (recent_data['Volume'].iloc[-1] - recent_data['Volume'].iloc[-2]) / recent_data['Volume'].iloc[-2] * 100 if recent_data['Volume'].iloc[-2] != 0 else 0
-        st.metric(label="Volume", value=f"{recent_data['Volume'].iloc[-1]:,.0f}",
-                  delta=f"{volume_change:.1f}%")
+        st.markdown(f"""
+        <div class="metric-card {volume_border_class}">
+            <p class="metric-title">Volume</p>
+            <h2 class="metric-value">{volume_value:,.0f}</h2>
+            <p class="metric-delta {volume_color_class}">{volume_emoji} {volume_change:.1f}%</p>
+        </div>
+        """, unsafe_allow_html=True)
 
 def render_predictions(predictions, current_price, future_days):
     """Renders the AI prediction cards."""
     st.markdown("## 🔮 AI Predictions")
-    # Define a new, more detailed set of periods
     periods = {
         "1 Day": 1, 
         "1 Week": 7, 
         "2 Weeks": 14, 
         "1 Month": 30, 
         "3 Months": 90, 
-        "6 Months": 180  # Added 6-month prediction
+        "6 Months": 180
     }
     
-    # Filter periods based on the user's selected future_days
     periods_to_display = {
         name: days for name, days in periods.items() if days <= future_days
     }
@@ -586,11 +833,14 @@ def render_predictions(predictions, current_price, future_days):
         
         with pred_cols[idx]:
             color_class = "gain-positive" if gain_pct > 0 else "gain-negative"
+            emoji = "📈" if gain_pct > 0 else "📉"
+            text_color_class = "gain-text" if gain_pct > 0 else "loss-text"
+            
             st.markdown(f"""
             <div class="prediction-card {color_class}">
                 <h4>{period_name}</h4>
-                <h2>₹{pred_price:.2f}</h2>
-                <h3>{gain_pct:+.2f}%</h3>
+                <h2 class="{text_color_class}">{emoji} ₹{pred_price:.2f}</h2>
+                <h3 class="{text_color_class}">{gain_pct:+.2f}%</h3>
                 <p>{status}</p>
             </div>
             """, unsafe_allow_html=True)
@@ -602,32 +852,49 @@ def render_recommendation(rec_score, rec_factors):
     
     if rec_score >= 3:
         recommendation = "STRONG BUY"
-        rec_class = "score-strong-buy"
+        rec_class = "strong-buy-color"
     elif rec_score >= 1:
         recommendation = "BUY"
-        rec_class = "score-buy"
+        rec_class = "buy-color"
     elif rec_score >= -1:
         recommendation = "HOLD"
-        rec_class = "score-hold"
+        rec_class = "hold-color"
     elif rec_score >= -3:
         recommendation = "SELL"
-        rec_class = "score-sell"
+        rec_class = "sell-color"
     else:
         recommendation = "STRONG SELL"
-        rec_class = "score-strong-sell"
+        rec_class = "strong-sell-color"
 
     with rec_col1:
         st.markdown(f"""
         <div class="recommendation-card">
-            <h2 class="{rec_class}">{recommendation}</h2>
-            <h1>Score: {rec_score}/5</h1>
+            <h1 class="{rec_class}">{recommendation}</h1>
+            <p class="recommendation-score">Score: {rec_score}/5</p>
         </div>
         """, unsafe_allow_html=True)
     
     with rec_col2:
         st.markdown("### Analysis Factors:")
+        st.markdown('<ul class="analysis-factors">', unsafe_allow_html=True)
         for factor in rec_factors:
-            st.markdown(f"• {factor}")
+            try:
+                score_str = factor.split('(')[-1].replace(')', '')
+                score = int(score_str)
+                score_class = "score-positive" if score > 0 else "score-negative"
+            except (IndexError, ValueError):
+                score_class = ""
+                score = ""
+            
+            factor_description = factor.split('(')[0].strip()
+            
+            st.markdown(f"""
+            <li>
+                <span>{factor_description}</span>
+                <span class="score-pill {score_class}">{score_str}</span>
+            </li>
+            """, unsafe_allow_html=True)
+        st.markdown('</ul>', unsafe_allow_html=True)
 
 def render_charts(recent_data, predictions, future_days, symbol):
     """Renders interactive Plotly charts."""
@@ -701,9 +968,14 @@ def render_technical_table(recent_data, current_price):
     st.dataframe(tech_df, use_container_width=True)
 
 def render_gemini_insights(selected_model, current_price, predictions, recent_data, metadata, rec_score, future_days):
-    """Generates and renders insights using the Gemini API."""
+    """Generates and renders insights using the Gemini API with a more detailed prompt."""
     st.markdown("## 🤖 AI Market Insights")
-    with st.spinner("🧠 Generating AI insights..."):
+    
+    if not GEMINI_AVAILABLE:
+        st.warning("AI Insights are not available. Please install the Google Generative AI library.")
+        return
+
+    with st.spinner("🧠 Generating comprehensive AI insights..."):
         try:
             stock_data = {
                 'symbol': selected_model['symbol'],
@@ -730,43 +1002,109 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
                 'model_accuracy': metadata['model_metrics']['hybrid']['r2'],
                 'recommendation_score': rec_score
             }
-            
-            model = genai.GenerativeModel('gemini-1.5-flash')
+
+            # Construct the comprehensive prompt for Gemini
             prompt = f"""
-            As a senior financial analyst, provide concise investment insights for {stock_data['company_name']} ({stock_data['symbol']}).
+            As a senior financial analyst, provide a comprehensive investment analysis for {stock_data['company_name']} ({stock_data['symbol']}).
 
-            **Current Status:**
-            - Price: ₹{stock_data['current_price']:.2f}
-            - Sector: {stock_data['sector']}
-            - AI Model Accuracy: {stock_data['model_accuracy']:.3f}
+            Analyze the following data points to create a structured report. All numerical values should be formatted clearly.
 
-            **AI Predictions:**
-            - 1 Week: {stock_data['predictions']['1 Week']['gain_pct']:.1f}%
-            - 1 Month: {stock_data['predictions']['1 Month']['gain_pct']:.1f}%
-
-            **Technical Indicators:**
+            **Provided Data:**
+            - **Current Price:** ₹{stock_data['current_price']:.2f}
+            - **Sector:** {stock_data['sector']}
+            - **AI Model Accuracy (R²):** {stock_data['model_accuracy']:.3f}
+            - **AI Price Predictions:**
+            - 1 Week: {stock_data['predictions']['1 Week']['gain_pct']:.1f}% gain
+            - 1 Month: {stock_data['predictions']['1 Month']['gain_pct']:.1f}% gain
+            - **Technical Indicators:**
             - RSI: {stock_data['technical_indicators']['RSI']:.1f}
             - MACD vs Signal: {stock_data['technical_indicators']['MACD']:.4f} vs {stock_data['technical_indicators']['MACD_Signal']:.4f}
+            - **Recommendation Score:** {stock_data['recommendation_score']}/5
 
-            **Recommendation Score:** {stock_data['recommendation_score']}/5
+            **Report Structure:**
 
-            Provide a brief analysis covering:
-            1. **Key Insights** (2-3 bullet points)
-            2. **Risk Factors** (main concerns)
-            3. **Investment Outlook** (short-term view)
+            1.  **Key Insights:** Summarize the main takeaways from the AI analysis and technical data.
+            2.  **Risk Factors:** Identify and explain the primary risks, including those not mentioned in the provided data, such as market risk or company-specific news.
+            3.  **Investment Outlook:** Based on the data, provide a clear short- to medium-term outlook.
+            4.  **Strategic Recommendations:** Offer actionable, strategic advice for a retail investor (e.g., "Buy on Dips," "Hold," "Book Partial Profits").
+            5.  **Conclusion:** Deliver a final, concise summary of the overall investment thesis.
 
-            Keep it concise and actionable for retail investors.
+            Ensure the entire output is formatted using Markdown with appropriate headings and bolding for clarity. Do not include any introductory or concluding remarks outside of the requested report structure.
             """
             
+            model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(prompt)
             st.markdown(response.text)
+
+        except genai.types.BlockedPromptException as e:
+            st.warning("⚠️ The AI model's response was blocked due to safety concerns. Please try again later.")
+            st.exception(e)
         except Exception as e:
-            st.error(f"Error generating AI insights: {str(e)}")
+            if "quota" in str(e).lower():
+                st.info("⚠️ Gemini API usage limit reached. Please try refreshing the page after a few minutes to get AI insights.")
+            else:
+                st.error(f"An unexpected API error occurred: {e}")
+                st.exception(e)
+
+def render_performance_section(info, current_price):
+    """Renders the Performance section with 52-week high/low and other key metrics."""
+    st.markdown("## 📈 Performance")
+    
+    try:
+        # Extract data from yfinance info dictionary
+        fifty_two_week_low = info.get('fiftyTwoWeekLow', 'N/A')
+        fifty_two_week_high = info.get('fiftyTwoWeekHigh', 'N/A')
+        day_low = info.get('dayLow', 'N/A')
+        day_high = info.get('dayHigh', 'N/A')
+        open_price = info.get('open', 'N/A')
+        previous_close = info.get('previousClose', 'N/A')
+        volume = info.get('volume', 'N/A')
+        market_cap = info.get('marketCap', 'N/A')
+
+        # NOTE: Do NOT pre-format the numbers for the DataFrame.
+        # This is what causes the ArrowInvalid error.
+
+        # Visual representation of today's high/low
+        st.markdown("### Today's Range")
+        range_col1, range_col2 = st.columns([1, 1])
+        with range_col1:
+            st.markdown(f"<b>Today's Low:</b> {day_low}", unsafe_allow_html=True)
+        with range_col2:
+            st.markdown(f'<div style="text-align: right;"><b>Today\'s High:</b> {day_high}</div>', unsafe_allow_html=True)
+        st.slider("Today's Range", float(day_low) if isinstance(day_low, (int, float)) else 0, float(day_high) if isinstance(day_high, (int, float)) else 1000, float(current_price) if isinstance(current_price, (int, float)) else 0, disabled=True)
+        st.write("---")
+
+        # Visual representation of 52W high/low
+        st.markdown("### 52-Week Range")
+        w_col1, w_col2 = st.columns([1, 1])
+        with w_col1:
+            st.markdown(f"<b>52W Low:</b> {fifty_two_week_low}", unsafe_allow_html=True)
+        with w_col2:
+            st.markdown(f'<div style="text-align: right;"><b>52W High:</b> {fifty_two_week_high}</div>', unsafe_allow_html=True)
+        st.slider("52W Range", float(fifty_two_week_low) if isinstance(fifty_two_week_low, (int, float)) else 0, float(fifty_two_week_high) if isinstance(fifty_two_week_high, (int, float)) else 1000, float(current_price) if isinstance(current_price, (int, float)) else 0, disabled=True)
+        st.write("---")
+
+        # Other metrics
+        metrics_data = {
+            "Open": open_price,
+            "Prev. Close": previous_close,
+            "Volume": volume,
+            "Market Cap": market_cap
+        }
+
+        metrics_df = pd.DataFrame(metrics_data, index=["Value"]).T
+        st.dataframe(metrics_df, use_container_width=True)
+
+    except Exception as e:
+        # User-friendly error message for the frontend
+        st.error("⚠️ An error occurred while rendering the performance data.")
+        st.info("The data for this stock might be incomplete or malformed. Please try another stock.")
+        # Log the full traceback for debugging purposes
+        st.exception(e)
 
 # -------------------------
 # Main Application Flow
 # -------------------------
-
 def main():
     st.set_page_config(layout="wide", page_title="MarketSage - AI Stock Predictor", page_icon="📈")
     
@@ -799,7 +1137,12 @@ def main():
         current_price = recent_data['Close'].iloc[-1]
         rec_score, rec_factors = calculate_recommendation_score(recent_data, metadata['model_metrics']['hybrid']['r2'], predictions, current_price)
 
-        render_metrics(current_price, recent_data, metadata)
+        render_historical_graph(selected_model['symbol'])
+        st.write("---")
+        st.write("---")
+        if info:
+            render_performance_section(info, current_price)
+        render_metrics(current_price, recent_data)
         st.write("---")
         render_predictions(predictions, current_price, future_days)
         st.write("---")
@@ -809,6 +1152,8 @@ def main():
         if show_charts:
             render_charts(recent_data, predictions, future_days, selected_model['symbol'])
         
+        
+
         if show_technical_details:
             st.write("---")
             render_technical_table(recent_data, current_price)

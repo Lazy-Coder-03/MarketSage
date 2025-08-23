@@ -1,0 +1,63 @@
+{
+  "symbol": "TCS.NS",
+  "company_name": "Tata Consultancy Services Limited",
+  "sector": "Technology",
+  "industry": "Information Technology Services",
+  "features": [
+    "Close",
+    "Open",
+    "High",
+    "Low",
+    "Volume",
+    "Sector_Close",
+    "EMA20",
+    "EMA50",
+    "RSI",
+    "MACD",
+    "MACD_Signal",
+    "Sector_EMA20",
+    "Sector_EMA50",
+    "Sector_RSI",
+    "Sector_MACD",
+    "Sector_MACD_Signal",
+    "is_business_day"
+  ],
+  "hybrid_weight": 0.04,
+  "lookback_days": 60,
+  "feature_size": 17,
+  "model_metrics": {
+    "lstm": {
+      "rmse": 151.1836329001691,
+      "mae": 122.42938996548742,
+      "r2": 0.8305056034610266
+    },
+    "transformer": {
+      "rmse": 103.46450388031828,
+      "mae": 86.08003883957497,
+      "r2": 0.9206168094300722
+    },
+    "hybrid": {
+      "rmse": 103.40175682006836,
+      "mae": 85.98440491425505,
+      "r2": 0.9207130656580139,
+      "weight": 0.04
+    }
+  },
+  "training_date": "2025-08-23T20:24:52.067890",
+  "model_architecture": {
+    "transformer": {
+      "hidden_dim": 64,
+      "num_heads": 8,
+      "num_layers": 2,
+      "dropout": 0.1
+    },
+    "lstm": {
+      "layers": [
+        256,
+        128,
+        64
+      ],
+      "dropout": 0.2
+    }
+  }
+}

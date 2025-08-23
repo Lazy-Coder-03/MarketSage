@@ -1,0 +1,63 @@
+{
+  "symbol": "SBIN.NS",
+  "company_name": "State Bank of India",
+  "sector": "Financial Services",
+  "industry": "Banks - Regional",
+  "features": [
+    "Close",
+    "Open",
+    "High",
+    "Low",
+    "Volume",
+    "Sector_Close",
+    "EMA20",
+    "EMA50",
+    "RSI",
+    "MACD",
+    "MACD_Signal",
+    "Sector_EMA20",
+    "Sector_EMA50",
+    "Sector_RSI",
+    "Sector_MACD",
+    "Sector_MACD_Signal",
+    "is_business_day"
+  ],
+  "hybrid_weight": 0.1,
+  "lookback_days": 60,
+  "feature_size": 17,
+  "model_metrics": {
+    "lstm": {
+      "rmse": 28.511985559064218,
+      "mae": 23.481806198553137,
+      "r2": 0.45491582589238355
+    },
+    "transformer": {
+      "rmse": 16.846418625129907,
+      "mae": 13.301249394886506,
+      "r2": 0.8097065564556694
+    },
+    "hybrid": {
+      "rmse": 16.663652950380246,
+      "mae": 12.758766157359394,
+      "r2": 0.8138131208544896,
+      "weight": 0.1
+    }
+  },
+  "training_date": "2025-08-23T19:36:42.677556",
+  "model_architecture": {
+    "transformer": {
+      "hidden_dim": 64,
+      "num_heads": 8,
+      "num_layers": 2,
+      "dropout": 0.1
+    },
+    "lstm": {
+      "layers": [
+        256,
+        128,
+        64
+      ],
+      "dropout": 0.2
+    }
+  }
+}

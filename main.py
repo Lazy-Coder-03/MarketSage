@@ -79,7 +79,7 @@ def prepare_data(symbol, lookback_days=60):
     """Prepare stock data with technical indicators"""
     print(f"📊 Preparing data for {symbol}...")
     
-    train_start = "2015-01-01"
+    train_start = "2005-01-01"
     train_end = pd.Timestamp.today()
     
     # Download stock data
@@ -230,8 +230,8 @@ def train_transformer(X_train, y_train, feature_size, device, epochs=50, patienc
             val_pred = model(X_val)
             val_loss = criterion(val_pred, y_val).item()
         
-        if epoch % 10 == 0:
-            print(f"Epoch {epoch+1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {val_loss:.4f}")
+        # if epoch % 10 == 0:
+        print(f"Epoch {epoch+1}: Train Loss = {avg_train_loss:.4f}, Val Loss = {val_loss:.4f}")
         
         # Early stopping
         if val_loss < best_val_loss:
@@ -387,7 +387,7 @@ def main():
     print("=" * 50)
     
     # Configuration
-    SYMBOL = "RELIANCE.NS"  # Change this to train different stocks
+    SYMBOL = "TCS.NS"  # Change this to train different stocks
     LOOKBACK_DAYS = 60
     EPOCHS = 50
     
