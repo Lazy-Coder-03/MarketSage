@@ -16,8 +16,6 @@ The system delivers a comprehensive analysis, including actionable insights, an 
 
 ------
 
----
-
 ###  Features of Market Sage at a Glance 
 
 -  **Hybrid AI Model:** Combines the strengths of LSTM and Transformer architectures for high-fidelity price predictions. 
@@ -48,11 +46,11 @@ MarketSage/
 
 ------
 
-### Quick Local Setup
+### Quick Setup
 
-For those who want to get started immediately, follow these three simple steps to set up and run Market Sage on your local machine.
+Get started with **Market Sage** in three simple steps—or just visit the **live Streamlit app**: [Market Sage](https://marketsage-sayantan.streamlit.app/)
 
-To understand this step in detail visit [README.md](../README.md)
+For a deeper dive into the project and how to run it locally, see the full [README.md](../README.md).
 
 1. **Clone the Repository**: Open your terminal and run the following command to clone the project:
 
@@ -74,6 +72,8 @@ To understand this step in detail visit [README.md](../README.md)
    ```
 
 ------
+
+<div style="page-break-before: always;"></div>
 
 ### 1. Introduction
 
@@ -101,6 +101,10 @@ Modeling the stock market would require a complex, high-dimensional, and constan
 
 While this project aims to approximate the stock market effectively to maximize profit, we acknowledge that no model can fully account for all real-world variables.
 
+---
+
+<div style="page-break-before: always;"></div>
+
 ### 2. Related Work
 
 Stock market prediction has historically relied on **classical econometric models** such as ARIMA and GARCH, which are effective at capturing short-term linear trends but fail under the non-linear volatility of financial markets. With the rise of machine learning, **tree-based and kernel methods** (e.g., SVM, Random Forest, XGBoost) have been applied, showing improved accuracy when features are carefully engineered. However, these approaches treat each time step independently and lack inherent temporal modeling capabilities.
@@ -116,12 +120,13 @@ Building on this trend, **Market Sage** introduces a lightweight hybrid LSTM–T
 | ARIMA / GARCH (Classical)         | Stock price forecasting   | Linear statistical time-series models         | Capture only linear trends; poor at volatility & regime shifts; short horizon | [MDPI](https://www.mdpi.com/2673-9909/5/3/76#:~:text=series%20models%20like%20ARIMA%20are,robustness%2C%20but%20their%20effectiveness%20is) |
 | SVM / RF / XGBoost (Classical ML) | Stock movement prediction | Tree- and kernel-based ML; boosting ensembles | Need engineered features; no temporal modeling; treat points independently | [RefPress](https://refpress.org/wp-content/uploads/2024/02/Guennioui_REF.pdf#:~:text=in%20two%20distinct%20stock%20markets%3A,associated%20with%20stock%20market%20prediction) |
 | CNN / RNN / LSTM                  | Stock sequence modeling   | Deep sequence models for temporal features    | CNN loses global context; RNN/LSTM vanishing gradients; lag on sudden shifts | [Nature](https://www.nature.com/articles/s41598-024-72045-3?error=cookies_not_supported&code=f8aca492-4c37-426c-8eb9-b8c4f052ce04#:~:text=Several%20studies%20in%20the%20field,stock%20price%20prediction%2C%20which%20yielded) |
-| Transformer (Vanilla)             | Stock trend prediction    | Self-attention capturing global dependencies  | Heavy compute needs; risk of overfitting; slow inference on long sequences | [Nature](https://www.nature.com/articles/s41598-024-72045-3?error=cookies_not_supported&code=f8aca492-4c37-426c-8eb9-b8c4f052ce04#:~:text=directly%20employ%20Transformer%20to%20forecast,model%2C%20surpassing%20mere%20efficiency%20considerations) |
 | CNN + LSTM Hybrid                 | Stock price & sentiment   | Joint short-term (CNN) + long-term (LSTM)     | Higher complexity; data-hungry; still limited feature attention | [arXiv](https://arxiv.org/abs/2411.19766#:~:text=networks%20to%20predict%20stock%20prices,more%20accurate%20stock%20price%20predictions) |
 | LSTM + Transformer Variants       | Stock + sentiment fusion  | Hybrid architectures (LSTM + FinBERT / MLP)   | Complex ensembles; computationally heavy                     | [AnserPress](https://www.anserpress.org/journal/jea/4/3/109/pdf), [MDPI](https://www.mdpi.com/2413-4155/7/1/7#:~:text=the%20chaotic%20nature%20of%20stocks,MLP%20network%20model) |
 | **Market Sage<br />(This one)**   | NSE stock forecasting     | Lightweight LSTM + Transformer hybrid         | Addresses prior limits: better temporal + feature attention, reduced latency | **This work**                                                |
 
 ------
+
+<div style="page-break-before: always;"></div>
 
 ### 3. Problem Definition / Statement
 
@@ -153,6 +158,8 @@ The primary objectives of the Market Sage project are to:
 This separation ensures technical modeling while delivering accessible intelligence to end-users.
 
 ---
+
+<div style="page-break-before: always;"></div>
 
 ### 4. Methodology
 
@@ -356,6 +363,8 @@ function OptimizeHybridWeights(lstm_preds, transformer_preds, actual_prices):
 
 ------
 
+<div style="page-break-before: always;"></div>
+
 **Transformer Hyperparameters:**
 
 1. ##### **hidden_dim (64):**
@@ -517,6 +526,8 @@ Ultimately, **Market Sage is not just a predictor—it is a decision-support sys
 
 ------
 
+<div style="page-break-before: always;"></div>
+
 ### 7. Future Enhancements
 
 Building on the project's success, several key enhancements could further increase its capabilities and utility:
@@ -530,6 +541,8 @@ Building on the project's success, several key enhancements could further increa
 -  **Brokerage API Integration:** Integrating with major brokerage APIs would enable users to execute trades directly from the Market Sage dashboard, creating a seamless and end-to-end investment experience.
 
 ------
+
+<div style="page-break-before: always;"></div>
 
 ### References
 
