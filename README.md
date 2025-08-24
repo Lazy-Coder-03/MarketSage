@@ -88,4 +88,24 @@ GEMINI_API_KEY="YOUR_API_KEY_HERE"
 
 This project is for educational and research purposes only. Feel free to fork the repository, modify the models, and contribute to its development.
 
-Built and maintained by [Sayantan Ghosh](https://github.com/lazy-coder-03).
+
+---
+
+## 📸 Screenshots
+
+Below are sample screenshots of MarketSage's UI and features:
+
+| Feature | Screenshot |
+|---------|------------|
+| Sidebar & Model Selection | ![Sidebar](images/SIdebar.png) |
+| Historical Price Chart | ![Historical Price Chart](images/Historical_Price_Chart.png) |
+| Current Market Status | ![Current Market Status](images/Current_Market_Status.png) |
+| Technical Indicators Table | ![Technical Indicators](images/Technical_indicators.png) |
+| Stock Performance (52W Range) | ![Stock Performance](images/Stock_Performance.png) |
+| AI Predictions | ![AI Predictions](images/AI_Predictions.png) |
+| AI Recommendation | ![AI Recommendation](images/AI_Recomendation.png) |
+| Analysis Chart with Predictions | ![Analysis Chart with Predictions](images/Analysis_Chart_with_Predictions.png) |
+| Model Performance Metrics | ![Model Performance Metrics](images/Model_performance_metrics.png) |
+| Gemini AI Insights | ![Gemini Insights](images/Gemini_insights.png) |
+
+---
