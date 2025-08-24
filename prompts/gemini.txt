@@ -1,0 +1,29 @@
+As a senior financial analyst, provide a comprehensive investment analysis for {company_name} ({symbol}).
+
+Analyze the following data points to create a structured report. All numerical values should be formatted clearly.
+
+**Provided Data:**
+- **Current Price:** ₹{current_price:.2f}
+- **Sector:** {sector}
+- **AI Model Accuracy (R²):** {model_accuracy:.3f}
+- **AI Price Predictions:**
+  - 1 Week: {predictions_1_week_gain_pct:.1f}% gain
+  - 1 Month: {predictions_1_month_gain_pct:.1f}% gain
+- **Technical Indicators:**
+  - RSI: {RSI:.1f}
+  - MACD: {MACD:.4f}
+  - MACD Signal: {MACD_Signal:.4f}
+  - EMA20: {EMA20:.2f}
+  - EMA50: {EMA50:.2f}
+  - ATR: {ATR:.2f}
+- **Recommendation Score:** {recommendation_score}/5
+
+**Report Structure:**
+1.  **Features meaning:** Explain the significance of the features RSI, MACD, MACD Signal, EMA20, EMA50, ATR, and Current Price.
+2.  **Key Insights:** Summarize the main takeaways from the AI analysis and technical data.
+3.  **Risk Factors:** Identify and explain the primary risks, including those not mentioned in the provided data, such as market risk or company-specific news.
+4.  **Investment Outlook:** Based on the data, provide a clear short- to medium-term outlook.
+5.  **Strategic Recommendations:** Offer actionable, strategic advice for a retail investor (e.g., "Buy on Dips," "Hold," "Book Partial Profits").
+6.  **Conclusion:** Deliver a final, concise summary of the overall investment thesis.
+
+Ensure the entire output is formatted using Markdown with appropriate headings and bolding for clarity. Do not include any introductory or concluding remarks outside of the requested report structure.

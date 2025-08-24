@@ -1214,37 +1214,67 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
                 'recommendation_score': rec_score
             }
 
-            prompt = f"""
-            As a senior financial analyst, provide a comprehensive investment analysis for {stock_data['company_name']} ({stock_data['symbol']}).
+            # Load prompt template from prompts/gemini.txt
+            prompt_path = os.path.abspath(os.path.join(os.path.dirname(__file__), "../prompts/gemini.txt"))
+            prompt_template = ""
+            if os.path.exists(prompt_path):
+                try:
+                    with open(prompt_path, "r", encoding="utf-8") as f:
+                        prompt_template = f.read()
+                except Exception as e:
+                    st.error(f"Error loading Gemini prompt template: {e}")
+            if not prompt_template:
+                # Fallback to default prompt
+                prompt_template = (
+                    "As a senior financial analyst, provide a comprehensive investment analysis for {company_name} ({symbol}).\n\n"
+                    "Analyze the following data points to create a structured report. All numerical values should be formatted clearly.\n\n"
+                    "**Provided Data:**\n"
+                    "- **Current Price:** ₹{current_price:.2f}\n"
+                    "- **Sector:** {sector}\n"
+                    "- **AI Model Accuracy (R²):** {model_accuracy:.3f}\n"
+                    "- **AI Price Predictions:**\n"
+                    "  - 1 Week: {predictions_1_week_gain_pct:.1f}% gain\n"
+                    "  - 1 Month: {predictions_1_month_gain_pct:.1f}% gain\n"
+                    "- **Technical Indicators:**\n"
+                    "  - RSI: {RSI:.1f}\n"
+                    "  - MACD: {MACD:.4f}\n"
+                    "  - MACD Signal: {MACD_Signal:.4f}\n"
+                    "  - EMA20: {EMA20:.2f}\n"
+                    "  - EMA50: {EMA50:.2f}\n"
+                    "  - ATR: {ATR:.2f}\n"
+                    "- **Recommendation Score:** {recommendation_score}/5\n\n"
+                    "**Report Structure:**\n"
+                    "1.  **Features meaning:** Explain the significance of the features RSI, MACD, MACD Signal, EMA20, EMA50, ATR, and Current Price.\n"
+                    "2.  **Key Insights:** Summarize the main takeaways from the AI analysis and technical data.\n"
+                    "3.  **Risk Factors:** Identify and explain the primary risks, including those not mentioned in the provided data, such as market risk or company-specific news.\n"
+                    "4.  **Investment Outlook:** Based on the data, provide a clear short- to medium-term outlook.\n"
+                    "5.  **Strategic Recommendations:** Offer actionable, strategic advice for a retail investor (e.g., 'Buy on Dips,' 'Hold,' 'Book Partial Profits').\n"
+                    "6.  **Conclusion:** Deliver a final, concise summary of the overall investment thesis.\n\n"
+                    "Ensure the entire output is formatted using Markdown with appropriate headings and bolding for clarity. Do not include any introductory or concluding remarks outside of the requested report structure."
+                )
 
-            Analyze the following data points to create a structured report. All numerical values should be formatted clearly.
-
-            **Provided Data:**
-            - **Current Price:** ₹{stock_data['current_price']:.2f}
-            - **Sector:** {stock_data['sector']}
-            - **AI Model Accuracy (R²):** {stock_data['model_accuracy']:.3f}
-            - **AI Price Predictions:**
-            - 1 Week: {stock_data['predictions']['1 Week']['gain_pct']:.1f}% gain
-            - 1 Month: {stock_data['predictions']['1 Month']['gain_pct']:.1f}% gain
-            - **Technical Indicators:**
-            - RSI: {stock_data['technical_indicators']['RSI']:.1f}
-            - MACD: {stock_data['technical_indicators']['MACD']:.4f}
-            - MACD Signal: {stock_data['technical_indicators']['MACD_Signal']:.4f}
-            - EMA20: {stock_data['technical_indicators']['EMA20']:.2f}
-            - EMA50: {stock_data['technical_indicators']['EMA50']:.2f}
-            - ATR: {recent_data['ATR'].iloc[-1]:.2f}
-            - **Recommendation Score:** {stock_data['recommendation_score']}/5
-
-            **Report Structure:**
-            1.  **Features meaning:** Explain the significance of the features RSI, MACD, MACD Signal, EMA20, EMA50, ATR, and Current Price.
-            2.  **Key Insights:** Summarize the main takeaways from the AI analysis and technical data.
-            3.  **Risk Factors:** Identify and explain the primary risks, including those not mentioned in the provided data, such as market risk or company-specific news.
-            4.  **Investment Outlook:** Based on the data, provide a clear short- to medium-term outlook.
-            5.  **Strategic Recommendations:** Offer actionable, strategic advice for a retail investor (e.g., "Buy on Dips," "Hold," "Book Partial Profits").
-            6.  **Conclusion:** Deliver a final, concise summary of the overall investment thesis.
-
-            Ensure the entire output is formatted using Markdown with appropriate headings and bolding for clarity. Do not include any introductory or concluding remarks outside of the requested report structure.
-            """
+            # Build flat prompt_vars dict for formatting
+            try:
+                prompt_vars = {
+                    "company_name": stock_data["company_name"],
+                    "symbol": stock_data["symbol"],
+                    "current_price": stock_data["current_price"],
+                    "sector": stock_data["sector"],
+                    "model_accuracy": stock_data["model_accuracy"],
+                    "predictions_1_week_gain_pct": stock_data["predictions"]["1 Week"]["gain_pct"],
+                    "predictions_1_month_gain_pct": stock_data["predictions"]["1 Month"]["gain_pct"],
+                    "RSI": stock_data["technical_indicators"]["RSI"],
+                    "MACD": stock_data["technical_indicators"]["MACD"],
+                    "MACD_Signal": stock_data["technical_indicators"]["MACD_Signal"],
+                    "EMA20": stock_data["technical_indicators"]["EMA20"],
+                    "EMA50": stock_data["technical_indicators"]["EMA50"],
+                    "ATR": recent_data["ATR"].iloc[-1],
+                    "recommendation_score": stock_data["recommendation_score"]
+                }
+                prompt = prompt_template.format(**prompt_vars)
+            except Exception as e:
+                st.error(f"Error formatting Gemini prompt: {e}")
+                prompt = ""
             
             model = genai.GenerativeModel('gemini-1.5-flash')
             response = model.generate_content(prompt)
@@ -1253,9 +1283,6 @@ def render_gemini_insights(selected_model, current_price, predictions, recent_da
 
         except genai.types.BlockedPromptException as e:
             st.warning("⚠️ The AI model's response was blocked due to safety concerns. Please try again later.")
-            st.exception(e)
-        except genai.types.APIError as e:
-            st.error("❌ Invalid API Key. Please enter a valid key in the sidebar to enable this feature.")
             st.exception(e)
         except Exception as e:
             if "quota" in str(e).lower():

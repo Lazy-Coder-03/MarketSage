@@ -19,6 +19,7 @@ from keras.models import Sequential
 from keras.layers import LSTM, Dense, Dropout, Input
 from keras.callbacks import EarlyStopping, ReduceLROnPlateau
 import warnings
+import argparse # New import for command-line arguments
 warnings.filterwarnings('ignore')
 
 # -------------------------
@@ -322,7 +323,7 @@ def find_best_hybrid_weight(lstm_preds, trans_preds, actual_prices):
     return best_weight
 
 def save_models_and_data(symbol, lstm_model, transformer_model, scaler, features, 
-                        hybrid_weight, info, model_metrics, lookback_days=60):
+                         hybrid_weight, info, model_metrics, lookback_days=60):
     """Save all models and associated data"""
     
     # Create models directory
@@ -385,9 +386,14 @@ def main():
     print("🚀 Starting MarketSage Hybrid Model Training")
     print("=" * 50)
     
-    # Configuration
-    SYMBOL = "RELIANCE.NS"  # Change this to train different stocks
-    LOOKBACK_DAYS = 60
+    # Use argparse to get symbol and lookback days from the command line
+    parser = argparse.ArgumentParser(description="Train a MarketSage model for a specific stock.")
+    parser.add_argument('--symbol', type=str, required=True, help="The stock symbol to train (e.g., RELIANCE.NS).")
+    parser.add_argument('--lookback', type=int, default=60, help="The number of past days to use for training sequences.")
+    args = parser.parse_args()
+    
+    SYMBOL = args.symbol
+    LOOKBACK_DAYS = args.lookback
     EPOCHS = 50
     
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
@@ -415,7 +421,7 @@ def main():
         X_test_torch = torch.tensor(X_test, dtype=torch.float32)
         
         trans_preds = get_predictions(transformer_model, X_test_torch, scaler, len(features), 
-                                    y_test, recalibrate=True, device=device)
+                                     y_test, recalibrate=True, device=device)
         lstm_preds = inverse_transform(lstm_model.predict(X_test, verbose=0), scaler, len(features))
         actual_prices = inverse_transform(y_test.reshape(-1,1), scaler, len(features))
         
@@ -445,13 +451,13 @@ def main():
         
         # 8. Print results
         print("\n📊 Model Performance Summary:")
-        print(f"LSTM     - RMSE: {model_metrics['lstm']['rmse']:.2f}, R²: {model_metrics['lstm']['r2']:.4f}")
-        print(f"Trans    - RMSE: {model_metrics['transformer']['rmse']:.2f}, R²: {model_metrics['transformer']['r2']:.4f}")
-        print(f"Hybrid   - RMSE: {model_metrics['hybrid']['rmse']:.2f}, R²: {model_metrics['hybrid']['r2']:.4f}")
+        print(f"LSTM   - RMSE: {model_metrics['lstm']['rmse']:.2f}, R²: {model_metrics['lstm']['r2']:.4f}")
+        print(f"Trans  - RMSE: {model_metrics['transformer']['rmse']:.2f}, R²: {model_metrics['transformer']['r2']:.4f}")
+        print(f"Hybrid - RMSE: {model_metrics['hybrid']['rmse']:.2f}, R²: {model_metrics['hybrid']['r2']:.4f}")
         
         # 9. Save models
         model_dir = save_models_and_data(SYMBOL, lstm_model, transformer_model, scaler, 
-                                       features, best_weight, info, model_metrics, LOOKBACK_DAYS)
+                                         features, best_weight, info, model_metrics, LOOKBACK_DAYS)
         
         print(f"\n🎉 Training completed successfully!")
         print(f"📁 Models saved to: {model_dir}")
