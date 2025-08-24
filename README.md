@@ -97,15 +97,15 @@ Below are sample screenshots of MarketSage's UI and features:
 
 | Feature | Screenshot |
 |---------|------------|
-| Sidebar & Model Selection | ![Sidebar](images/SIdebar.png) |
+| Welcome Page | ![Welcome Page](images/Welcome_Page.png) |
+| Sidebar & Model Selection | ![Sidebar](images/Sidebar.png) |
 | Historical Price Chart | ![Historical Price Chart](images/Historical_Price_Chart.png) |
+| Stock Performance (52W Range) | ![Stock Performance](images/Stock_Performance.png) |
 | Current Market Status | ![Current Market Status](images/Current_Market_Status.png) |
 | Technical Indicators Table | ![Technical Indicators](images/Technical_indicators.png) |
-| Stock Performance (52W Range) | ![Stock Performance](images/Stock_Performance.png) |
-| AI Predictions | ![AI Predictions](images/AI_Predictions.png) |
 | AI Recommendation | ![AI Recommendation](images/AI_Recomendation.png) |
+| AI Predictions | ![AI Predictions](images/AI_Predictions.png) |
 | Analysis Chart with Predictions | ![Analysis Chart with Predictions](images/Analysis_Chart_with_Predictions.png) |
-| Model Performance Metrics | ![Model Performance Metrics](images/Model_performance_metrics.png) |
 | Gemini AI Insights | ![Gemini Insights](images/Gemini_insights.png) |
-
+| Model Performance Metrics | ![Model Performance Metrics](images/Model_performance_metrics.png) |
 ---
