@@ -21,14 +21,13 @@ def check_and_install_dependencies():
     This function handles both virtualenv creation and package installation.
     """
     print("🛠️ Checking for and installing dependencies...")
-    venv_dir = os.path.join(PROJECT_ROOT, 'venv')
+    venv_dir = os.path.join(PROJECT_ROOT, '.venv')
     
     # Check if a virtual environment exists
     if not os.path.exists(venv_dir):
-        print("Creating virtual environment...")
+        print("Creating virtual environment (.venv)...")
         try:
-            # Check if virtualenv is installed globally
-            subprocess.run([sys.executable, '-m', 'venv', 'venv'], check=True, cwd=PROJECT_ROOT)
+            subprocess.run([sys.executable, '-m', 'venv', '.venv'], check=True, cwd=PROJECT_ROOT)
             print("Virtual environment created successfully.")
         except FileNotFoundError:
             print("Error: 'venv' module not found. Please ensure Python is correctly installed or try 'pip install virtualenv'.", file=sys.stderr)
@@ -83,7 +82,7 @@ def train_model(model_name, lookback_days):
     print(f"--- Starting training for model '{model_name}' with lookback of {lookback_days} days ---")
     
     # Determine the Python executable path inside the venv
-    venv_dir = os.path.join(PROJECT_ROOT, 'venv')
+    venv_dir = os.path.join(PROJECT_ROOT, '.venv')
     if sys.platform == "win32":
         python_path = os.path.join(venv_dir, 'Scripts', 'python.exe')
     else:
@@ -110,7 +109,7 @@ def run_streamlit_app():
     print("--- Loading and running Streamlit app ---")
     
     # Determine the Streamlit executable path inside the venv
-    venv_dir = os.path.join(PROJECT_ROOT, 'venv')
+    venv_dir = os.path.join(PROJECT_ROOT, '.venv')
     if sys.platform == "win32":
         streamlit_path = os.path.join(venv_dir, 'Scripts', 'streamlit.exe')
     else:
