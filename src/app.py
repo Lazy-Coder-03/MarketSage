@@ -1,3 +1,4 @@
+import sys
 import streamlit as st
 import yfinance as yf
 import pandas as pd
@@ -15,6 +16,8 @@ from datetime import datetime, timedelta
 from dotenv import load_dotenv
 import warnings
 import traceback
+import gdown
+import zipfile
 
 warnings.filterwarnings('ignore')
 

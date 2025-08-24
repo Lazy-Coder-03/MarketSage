@@ -34,6 +34,19 @@ MarketSage/
 ```
 
 ---
+## 📖 Project Documentation
+
+A comprehensive report is available in the `documentation/MarketSage.md` file. It covers:
+
+- Problem definition and motivation
+- Related work in stock market prediction
+- Detailed methodology (data pipeline, model architectures, hybrid ensemble)
+- Experiments, results, and visualizations
+- Future enhancements and references
+
+[Open MarketSage.md](documentation/MARKETSAGE.md.md)
+
+---
 
 ## 🎨 Customizing AI Insights
 
