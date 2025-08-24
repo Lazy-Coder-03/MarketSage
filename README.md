@@ -45,7 +45,7 @@ A comprehensive report is available in the `documentation/MarketSage.md` file. I
 - Experiments, results, and visualizations
 - Future enhancements and references
 
-[Open MarketSage.md](documentation/MARKETSAGE.md.md)
+[Open MarketSage.md](documentation/MARKETSAGE.md)
 
 ---
 
