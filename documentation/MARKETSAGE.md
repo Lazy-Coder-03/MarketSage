@@ -1,4 +1,6 @@
-# Market Sage: A Hybrid AI Approach to Indian Stock Market Prediction
+# Market Sage
+
+## A Hybrid AI Approach to Indian Stock Market Prediction
 
 Project By: [Sayantan Ghosh](https://www.github.com/lazy-coder-03)
 
@@ -498,13 +500,13 @@ We evaluated using MAE, RMSE, and R² (Section 4.6).
 
   ![Training vs Validation Loss](../images/Train_Val_loss.png)
 
-- **In-App Predictions** → Model closely follows actual stock trends with minor deviations, showing practical deployment readiness.
-
-  ![In-App Predictions](../images/In_app_Preds.png)
+- **In-App Predictions** → Model closely follows actual stock trends with minor deviations, showing practical deployment readiness.<img src="../images/In_app_Preds.png" alt="In-App Predictions" style="display:block; margin:auto; max-width:50%;" />
 
   
 
 ------
+
+<div style="page-break-before: always;"></div>
 
 ### 6. Conclusion
 
@@ -546,21 +548,21 @@ Building on the project's success, several key enhancements could further increa
 
 ### References
 
-[[1]](https://www.mdpi.com/2673-9909/5/3/76#:~:text=series models like ARIMA are,robustness%2C but their effectiveness is) J. Smith, R. Gupta, and A. Patel, “**ARIMA-based stock forecasting**,” *MDPI Journal of Statistics and Applications*, vol. 5, no. 3, pp. 76–89, 2023.
+[[1]](https://www.mdpi.com/2673-9909/5/3/76) J. Smith, R. Gupta, and A. Patel, “**ARIMA-based stock forecasting**,” *MDPI Journal of Statistics and Applications*, vol. 5, no. 3, pp. 76–89, 2023.
 
-[[2]](https://refpress.org/wp-content/uploads/2024/02/Guennioui_REF.pdf#:~:text=in two distinct stock markets%3A,associated with stock market prediction) A. Guennioui, H. Tairi, and L. Ait-Mlouk, “**XGBoost–LightGBM ensemble for multi-market stock prediction**,” *RefPress Journal of Economics and Finance*, vol. 12, no. 1, pp. 45–59, 2024.
+[[2]](https://refpress.org/wp-content/uploads/2024/02/Guennioui_REF.pdf) A. Guennioui, H. Tairi, and L. Ait-Mlouk, “**XGBoost–LightGBM ensemble for multi-market stock prediction**,” *RefPress Journal of Economics and Finance*, vol. 12, no. 1, pp. 45–59, 2024.
 
-[[3]](https://www.nature.com/articles/s41598-024-72045-3#:~:text=Several studies in the field,stock price prediction%2C which yielded) L. Chen, Y. Wu, and M. Zhao, “**Deep learning methods for stock price forecasting**,” *Nature Scientific Reports*, vol. 14, no. 72045, 2024.
+[[3]](https://www.nature.com/articles/s41598-024-72045-3) L. Chen, Y. Wu, and M. Zhao, “**Deep learning methods for stock price forecasting**,” *Nature Scientific Reports*, vol. 14, no. 72045, 2024.
 
 [[4]](https://papers.nips.cc/paper/7181-attention-is-all-you-need.pdf) A. Vaswani, N. Shazeer, N. Parmar, J. Uszkoreit, L. Jones, A. Gomez, Ł. Kaiser, and I. Polosukhin, “**Attention is all you need**,” in *Proceedings of NeurIPS*, pp. 5998–6008, 2017.
 
-[[5]](https://arxiv.org/abs/2411.19766#:~:text=networks to predict stock prices,more accurate stock price predictions) Y. Zhang, H. Liu, and X. Chen, “**CNN–LSTM hybrid for stock and sentiment analysis**,” *arXiv preprint*, arXiv:2411.19766, 2024.
+[[5]](https://arxiv.org/abs/2411.19766) Y. Zhang, H. Liu, and X. Chen, “**CNN–LSTM hybrid for stock and sentiment analysis**,” *arXiv preprint*, arXiv:2411.19766, 2024.
 
 [[6]](https://www.anserpress.org/journal/jea/4/3/109/pdf) M. Vallarino, S. Rao, and D. Kim, “**LSTM + Transformer with sentiment fusion for financial forecasting,**” ***AnserPress Journal of Economics & Analytics***, vol. 4, no. 3, pp. 109–122, 2025.
 
-[[7]](https://www.mdpi.com/2413-4155/7/1/7#:~:text=the chaotic nature of stocks,MLP network model) R. Kabir, T. Hossain, and M. Alam, “**Hybrid LSTM–Transformer–MLP ensemble for robust stock prediction,**” ***MDPI Computational Economics***, vol. 7, no. 1, pp. 7–19, 2025.
+[[7]](https://www.mdpi.com/2413-4155/7/1/7) R. Kabir, T. Hossain, and M. Alam, “**Hybrid LSTM–Transformer–MLP ensemble for robust stock prediction,**” ***MDPI Computational Economics***, vol. 7, no. 1, pp. 7–19, 2025.
 
-[[8]](https://archive.org/details/httpswww.ijtsrd.comcomputer-scienceother49868stock-market-prediction-using-machi/page/2049/mode/2up?view=theater) M. B. Lal, “**Stock market prediction using machine learning techniques,**” *International Journal of Trend in Scientific Research and Development (IJTSRD)*, vol. 6, no. 5, pp. 2049–2056, 2022., T. Hossain, and M. Alam, “**Hybrid LSTM–Transformer–MLP ensemble for robust stock prediction**,” *MDPI Computational Economics*, vol. 7, no. 1, pp. 7–19, 2025. [Online]. 
+[[8]](https://archive.org/details/httpswww.ijtsrd.comcomputer-scienceother49868stock-market-prediction-using-machi/mode/2up?view=theater) M. B. Lal, “**Stock market prediction using machine learning techniques,**” *International Journal of Trend in Scientific Research and Development (IJTSRD)*, vol. 6, no. 5, pp. 2049–2056, 2022., T. Hossain, and M. Alam, “**Hybrid LSTM–Transformer–MLP ensemble for robust stock prediction**,” *MDPI Computational Economics*, vol. 7, no. 1, pp. 7–19, 2025. [Online]. 
 
 ------
 
