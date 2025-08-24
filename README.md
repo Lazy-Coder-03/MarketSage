@@ -1,5 +1,6 @@
 
-# 📈 MarketSage: An AI-Powered Stock Prediction System
+# 📈 MarketSage: An AI-Powered Stock Prediction System [![Streamlit App](https://static.streamlit.io/badges/streamlit_badge_black_white.svg)](https://marketsage-sayantan.streamlit.app/)
+
 
 MarketSage is a sophisticated, AI-driven application designed to forecast stock prices and deliver comprehensive financial analysis. By integrating a Long Short-Term Memory (LSTM) model to capture sequential patterns with a Transformer network's attention mechanisms, this hybrid system provides robust, data-backed insights. The entire application is built for local execution using Streamlit, ensuring a polished, intuitive, and privacy-focused experience.
 
