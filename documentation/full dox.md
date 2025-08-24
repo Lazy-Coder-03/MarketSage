@@ -26,7 +26,7 @@ Predicting the movement of stocks in the competitive financial markets is a chal
 
 Over the years, experts have employed a variety of methods to try and predict the unpredictable nature of the market to generate returns.
 
-#### 1.2 Goals and Limitations
+#### 1.2 Goals of The Project
 
 The primary goal of this project is to develop a robust and highly accurate model for predicting short-term stock price movements.
 
@@ -72,7 +72,7 @@ In today's fast-paced digital economy, businesses of all sizes are faced with an
 
 This challenge leads to several critical issues:
 
-- **Delayed Insights:** Businesses are often reactive rather than proactive, making decisions based on outdated or incomplete information.
+- **Delayed Insights:** Investors are often reactive rather than proactive, making decisions based on outdated or incomplete information.
 - **Inefficient Resource Allocation:** Manual collection and analysis consume valuable resources.
 - **Bias and Subjectivity:** Human judgment can skew interpretations of market signals.
 
@@ -99,118 +99,191 @@ This separation ensures technical modeling while delivering accessible intellige
 
 ### 4. Methodology
 
-#### 4.1 Problem Formulation 
+#### 4.1 Problem Formulation
 
-- ##### **Inputs:**  
+- **Inputs:**
+   The model takes as input a sequence of historical market data
+  $$
+  X \in \mathbb{R}^{L \times F}
+  $$
+  where:
 
-  The model takes as input a sequence of historical market data
+  - $L$ = lookback window (e.g., 60 days)
+  - $F$ = number of features (e.g., Close Price, Volume, RSI, MACD, sector indicators, calendar flags)
 
-  $ x \in R^{L\times F} $
+- **Output:**
+   The model produces a single continuous value:
+  $$
+  \hat{y} \in \mathbb{R}
+  $$
+  representing the predicted stock price for the next time step.
 
-  where:  
+- **Objective:**
+   Minimize the Mean Squared Error (MSE) between predicted values $\hat{y}$ and true values $y$:
+  $$
+  MSE = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
+  $$
 
-  - L = lookback window (e.g., 60 days)  
-  - F = number of features (e.g., Close Price, Volume, RSI, MACD).  
+- **Constraints:**
 
-- ##### **Output:**  
+  - Computational resources (GPU/CPU limitations, memory, latency requirements)
+  - Data availability and quality (missing data, unreliable APIs)
+  - Cost considerations for cloud deployment
+  - Scalability to multiple stocks and concurrent users
 
-  The model produces a single continuous value: 
-
-  $ \hat{y} \in R $
-
-
-  $\hat{y}$ representing the predicted stock price for the next time step.  
-
-  - Objective:  
-
-    Minimize the Mean Squared Error (MSE) between predicted values $\hat{y}$ and true values y:  
-
-
-$$
-MSE = \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2
-$$
-
-- ##### **Constraints:**  
-
-  - **Computational Resources:** We're limited by the processing power, memory, and GPU availability for both training the model and generating predictions. A larger, more complex model might be more accurate, but it could be too slow or expensive to run in production.
-
-  - **Data Availability and Quality:** The model's performance is constrained by the data it can access. Issues like missing data, unreliable APIs, or lack of historical information for certain stocks are significant practical limitations.
-
-  - **Cost:** Running powerful AI models on a cloud platform incurs costs. The chosen architecture and the frequency of predictions are constrained by the project's budget, especially for a consumer-facing application that needs to be monetized.
-
-  - **Scalability:** The model needs to perform well not just on a single stock, but on hundreds or thousands of stocks simultaneously. The design must be able to handle a large volume of requests from many users.
+------
 
 #### 4.2 Data Pipeline
 
-- **Data Collection:** Historical daily OHLCV (Open, High, Low, Close, Volume) data was obtained from the National Stock Exchange (NSE) using the `yfinance` API.  
-- **Feature Engineering:** Technical indicators including SMA, EMA, RSI, MACD, and ATR were derived and concatenated with raw OHLCV values.  
-- **Preprocessing:**  
-  - Missing values handled via forward-fill interpolation.  
-  - All features normalized to [0,1] using Min–Max scaling.  
-- **Data Splits:**  
-  - Training set: 80%  
-  - Validation set: subset of training data  
-  - Test set: 20%  
-
-#### 4.3 Model Architecture
-
-The architecture is a **hybrid ensemble** combining a stacked LSTM and a Transformer network.  
-
-- **Pseudocode of Hybrid Ensemble:**
-
-  ```
-  function HybridPrediction(input_sequence):
-      prediction_lstm = LstmModel(input_sequence)
-      prediction_transformer = TransformerModel(input_sequence)
-  
-      prediction_hybrid = w * prediction_lstm + (1 - w) * prediction_transformer
-  
-      return prediction_hybrid
-  ```
-
-- **Stacked LSTM Model:** Captures temporal dependencies and long-term memory.
-
-  ```
-  model = Sequential([
-      Input(shape=(X_train.shape[1], X_train.shape[2])),
-      LSTM(256, return_sequences=True),
-      Dropout(0.2),
-      LSTM(128, return_sequences=True),
-      Dropout(0.2),
-      LSTM(64),
-      Dropout(0.2),
-      Dense(1)
-  ])
-  ```
-
-- **Transformer Model:** Uses multi-head self-attention to dynamically focus on the most relevant time steps and features.
-
-  ```
-  model = TransformerModel(
-      feature_size=feature_size,
-      hidden_dim=64,
-      num_heads=8,
-      num_layers=2,
-      dropout=0.1
-  ).to(device)
-  ```
+- **Data Collection:**
+   Historical daily OHLCV (Open, High, Low, Close, Volume) data from NSE via `yfinance`.
 
 - **Data Flow Diagram:**
 
   <img src="images/Horizontal_data_flow.svg" alt="Data Flow Diagram"/>
 
+- **Feature Engineering:**
+   The model uses a **17-dimensional feature vector** at each timestep, combining stock-level, sector-level, and calendar features:
+
+  1. **Price & Volume (5 features):** Close, Open, High, Low, Volume
+  2. **Technical Indicators (5 features):** EMA20, EMA50, RSI, MACD, MACD_Signal
+  3. **Sector-Derived Indicators (6 features):** Sector_Close, Sector_EMA20, Sector_EMA50, Sector_RSI, Sector_MACD, Sector_MACD_Signal
+  4. **Calendar Feature (1 feature):** is_business_day
+
+- **Preprocessing:**
+
+  - Forward-fill missing values for price-related features
+  - Volume set to 0 on non-trading days
+  - Min–Max normalization for all features
+
+- **Data Splits:**
+
+  - Training set: 80%
+  - Validation set: subset of training data
+  - Test set: 20%
+
+- **Final Input Representation:**
+   At each timestep $t$: $x_t \in \mathbb{R}^{17}$
+   Over a 60-day lookback: $X \in \mathbb{R}^{60 \times 17}$
+
+------
+
+#### 4.3 Model Architecture & Hybrid Optimization
+
+The architecture is a **hybrid ensemble** combining a stacked LSTM and a Transformer network, designed to capture both temporal dependencies and feature-level attention.
+
+##### 4.3.1 LSTM Model
+
+Captures long-term temporal dependencies and smooths noise.
+
+```
+model = Sequential([
+    Input(shape=(X_train.shape[1], X_train.shape[2])),
+    LSTM(256, return_sequences=True),
+    Dropout(0.2),
+    LSTM(128, return_sequences=True),
+    Dropout(0.2),
+    LSTM(64),
+    Dropout(0.2),
+    Dense(1)
+])
+```
+
+**Rationale:**
+
+- Progressive reduction in hidden units allows hierarchical temporal abstraction
+- Dropout mitigates overfitting
+- `return_sequences=True` enables stacking multiple LSTM layers
+
+------
+
+##### 4.3.2 Transformer Model
+
+Uses multi-head self-attention to focus on critical timesteps and features.
+
+```
+model = TransformerModel(
+    feature_size=17,
+    hidden_dim=64,
+    num_heads=8,
+    num_layers=2,
+    dropout=0.1
+).to(device)
+```
+
+**Rationale:**
+
+- Multi-head attention captures multiple dependencies simultaneously
+- Two layers provide sufficient representational power without excessive computation
+- Complements LSTM by detecting abrupt market shifts
+
+------
+
+##### 4.3.3 Hybrid LSTM–Transformer Ensemble
+
+Weighted combination of LSTM and Transformer predictions:
+$$
+\hat{y}_{\text{hybrid}} = w \cdot \hat{y}_{\text{LSTM}} + (1 - w) \cdot \hat{y}_{\text{Transformer}}
+$$
+**Rationale:**
+
+- LSTM: smooths noisy data, captures long-term trends
+- Transformer: identifies key timesteps and feature interactions
+- Hybrid: balances stability and responsiveness
+
+**Pseudocode for Prediction & Weight Optimization:**
+
+```
+function HybridPrediction(input_sequence):
+    prediction_lstm = LstmModel(input_sequence)
+    prediction_transformer = TransformerModel(input_sequence)
+    prediction_hybrid = w * prediction_lstm + (1 - w) * prediction_transformer
+    return prediction_hybrid
+
+function OptimizeHybridWeights(lstm_preds, transformer_preds, actual_prices):
+    best_weight = None
+    best_rmse = Infinity
+
+    for w in range(0.0, 1.0, step=0.01):
+        hybrid_preds = w * lstm_preds + (1 - w) * transformer_preds
+        rmse = ComputeRMSE(actual_prices, hybrid_preds)
+
+        if rmse < best_rmse:
+            best_rmse = rmse
+            best_weight = w
+
+    return best_weight
+```
+
+- $w \approx 1$ → relies on LSTM
+- $w \approx 0$ → relies on Transformer
+- $w \in (0,1)$ → balances both
+
+------
+
+##### 4.3.4 Hyperparameter Summary
+
+| Model           | Layer / Parameter | Value / Choice | Justification                             |
+| --------------- | ----------------- | -------------- | ----------------------------------------- |
+| **LSTM**        | Hidden Units      | 256 → 128 → 64 | Hierarchical temporal feature extraction  |
+|                 | Dropout           | 0.2            | Mitigates overfitting                     |
+|                 | return_sequences  | True / False   | Supports stacking and final vector output |
+| **Transformer** | hidden_dim        | 64             | Compact internal representation           |
+|                 | num_heads         | 8              | Captures multiple dependencies            |
+|                 | num_layers        | 2              | Sufficient depth for short sequences      |
+|                 | dropout           | 0.1            | Regularization                            |
+
+------
+
 #### 4.4 AI-Powered Narrative Analysis
 
-Market Sage provides **narrative insights** in addition to numeric predictions.
+Market Sage complements numeric forecasts with **Gemini-generated insights**:
 
-- **Input to Gemini API:** Predictions, technical indicators, confidence scores.
-- **Prompting Strategy:** Instruct LLM to act as senior financial analyst.
-- **Output Report Includes:**
-  - Investment outlook
-  - Risk factor analysis
-  - Strategic recommendations
+- **Input:** Predictions, indicators, confidence scores
+- **Prompt:** Acts as senior financial analyst
+- **Output:** Investment outlook, risk factors, strategic recommendations
 
-**Example of Generated Insights:**
+  **Example of Generated Insights:**
 
 >### Reliance Industries Limited (RELIANCE.NS) Investment Analysis
 >
@@ -250,87 +323,36 @@ Market Sage provides **narrative insights** in addition to numeric predictions.
 >
 >Reliance Industries remains a significant player in the Indian market, however, the current technical indicators point to potential short-term downside risk. Investors should monitor the situation closely and exercise caution, potentially waiting for a clearer indication of a reversal before making significant changes to their holdings. Further investigation into the discrepancy between the AI predictions and technical analysis would be beneficial.
 
+------
+
 #### 4.5 Training Setup
 
-- **Optimizer:** Adam ($lr=1\times 10^{−3}$)
-- **Loss Function:** Mean Squared Error (MSE)
+- **Optimizer:** Adam ($lr=1\times 10^{-3}$)
+- **Loss Function:** MSE
 - **Hyperparameters:** batch size = 64, epochs = 50
 - **Regularization:** Dropout + validation monitoring
 
+------
+
 #### 4.6 Evaluation Metrics
 
-**1. Mean Absolute Error (MAE)**  
-$$
-\text{MAE} = \frac{1}{n} \sum_{i=1}^{n} \lvert y_i - \hat{y}_i \rvert
-$$
+1. **Mean Absolute Error (MAE)**
 
-- Measures average magnitude of errors.  
-- Easy to interpret (same units as target variable).  
-- Treats all errors equally.
-
----
-
-**2. Root Mean Squared Error (RMSE)**  
 $$
-\text{RMSE} = \sqrt{ \frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2 }
+\text{MAE} = \frac{1}{n} \sum_{i=1}^{n} |y_i - \hat{y}_i|
 $$
 
-- Square root of MSE.  
-- Penalizes large errors more strongly.  
-- Always ≥ MAE.  
+1. **Root Mean Squared Error (RMSE)**
 
----
+$$
+\text{RMSE} = \sqrt{\frac{1}{n} \sum_{i=1}^{n} (y_i - \hat{y}_i)^2}
+$$
 
-**3. Coefficient of Determination (R² Score)**  
+1. **Coefficient of Determination (R²)**
+
 $$
 R^2 = 1 - \frac{\sum_{i=1}^{n} (y_i - \hat{y}_i)^2}{\sum_{i=1}^{n} (y_i - \bar{y})^2}
 $$
-
-- Measures proportion of variance explained by the model.  
-- \(R^2 = 1\) → perfect fit.  
-- \(R^2 = 0\) → no better than predicting the mean.  
-- Can be negative if model is worse than mean.
-
-#### 4.7 Hybrid Ensemble Optimization
-
-Although both models perform well individually, they complement each other.
-
-- **LSTM:** Best for long-term sequential dependencies.
-- **Transformer:** Best for attention-driven feature relevance.
-
-The hybrid ensemble combines them:
-$$
-\hat{y}_{\text{hybrid}} = w \cdot \hat{y}_{\text{LSTM}} + (1 - w) \cdot \hat{y}_{\text{Transformer}}
-$$
-
-where, $w \in [0,1]$
-
-
-- **Pseudocode:**
-
-  ```
-  function OptimizeHybridWeights(lstm_preds, transformer_preds, actual_prices):
-      best_weight = None
-      best_rmse = Infinity
-  
-      for w in range(0.0, 1.0, step=0.01):
-          hybrid_preds = w * lstm_preds + (1 - w) * transformer_preds
-          rmse = ComputeRMSE(actual_prices, hybrid_preds)
-  
-          if rmse < best_rmse:
-              best_rmse = rmse
-              best_weight = w
-  
-      return best_weight
-  ```
-
-  
-
-- If \(w\approx 1\): relies on LSTM.
-
-- If \(w\approx 0\): relies on the Transformer.
-
-- If $w \in (0,1)$\: it balances both.
 
 ------
 
@@ -422,7 +444,7 @@ Building on the project's success, several key enhancements could further increa
 
 [[7]](https://www.mdpi.com/2413-4155/7/1/7#:~:text=the chaotic nature of stocks,MLP network model) R. Kabir, T. Hossain, and M. Alam, “**Hybrid LSTM–Transformer–MLP ensemble for robust stock prediction,**” ***MDPI Computational Economics***, vol. 7, no. 1, pp. 7–19, 2025.
 
-[[8]](https://archive.org/details/httpswww.ijtsrd.comcomputer-scienceother49868stock-market-prediction-using-machi/page/2049/mode/2up?view=theater) M. B. Lal, “**Stock market prediction using machine learning techniques,**” ***International Journal of Trend in Scientific Research and Development** (IJTSRD)*, vol. 6, no. 5, pp. 2049–2056, 2022., T. Hossain, and M. Alam, “**Hybrid LSTM–Transformer–MLP ensemble for robust stock prediction**,” *MDPI Computational Economics*, vol. 7, no. 1, pp. 7–19, 2025. [Online]. 
+[[8]](https://archive.org/details/httpswww.ijtsrd.comcomputer-scienceother49868stock-market-prediction-using-machi/page/2049/mode/2up?view=theater) M. B. Lal, “**Stock market prediction using machine learning techniques,**” *International Journal of Trend in Scientific Research and Development (IJTSRD)*, vol. 6, no. 5, pp. 2049–2056, 2022., T. Hossain, and M. Alam, “**Hybrid LSTM–Transformer–MLP ensemble for robust stock prediction**,” *MDPI Computational Economics*, vol. 7, no. 1, pp. 7–19, 2025. [Online]. 
 
 ------
 
