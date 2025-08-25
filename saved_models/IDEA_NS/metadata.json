@@ -1,0 +1,63 @@
+{
+  "symbol": "IDEA.NS",
+  "company_name": "Vodafone Idea Limited",
+  "sector": "Communication Services",
+  "industry": "Telecom Services",
+  "features": [
+    "Close",
+    "Open",
+    "High",
+    "Low",
+    "Volume",
+    "Sector_Close",
+    "EMA20",
+    "EMA50",
+    "RSI",
+    "MACD",
+    "MACD_Signal",
+    "Sector_EMA20",
+    "Sector_EMA50",
+    "Sector_RSI",
+    "Sector_MACD",
+    "Sector_MACD_Signal",
+    "is_business_day"
+  ],
+  "hybrid_weight": 0.28,
+  "lookback_days": 60,
+  "feature_size": 17,
+  "model_metrics": {
+    "lstm": {
+      "rmse": 1.1488523124868204,
+      "mae": 0.9017436384090419,
+      "r2": 0.9024506685359817
+    },
+    "transformer": {
+      "rmse": 0.8460906020966213,
+      "mae": 0.6357319109138451,
+      "r2": 0.9470909901391009
+    },
+    "hybrid": {
+      "rmse": 0.783050094951728,
+      "mae": 0.5915754457892431,
+      "r2": 0.9546815565259121,
+      "weight": 0.28
+    }
+  },
+  "training_date": "2025-08-25T14:00:41.944838",
+  "model_architecture": {
+    "transformer": {
+      "hidden_dim": 64,
+      "num_heads": 8,
+      "num_layers": 2,
+      "dropout": 0.1
+    },
+    "lstm": {
+      "layers": [
+        256,
+        128,
+        64
+      ],
+      "dropout": 0.2
+    }
+  }
+}

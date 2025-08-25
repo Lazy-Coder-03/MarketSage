@@ -49,7 +49,7 @@ def check_and_install_dependencies():
 
     print("Installing packages from requirements.txt...")
     try:
-        subprocess.run([pip_path, 'install', '-r', REQUIREMENTS_FILE], check=True, cwd=PROJECT_ROOT)
+        subprocess.run([pip_path, 'install', '-r', REQUIREMENTS_FILE, '-v'], check=True, cwd=PROJECT_ROOT)
         print("✅ Dependencies installed successfully.")
     except FileNotFoundError:
         print("Error: 'pip' executable not found in the virtual environment. Please check the virtual environment setup.", file=sys.stderr)
